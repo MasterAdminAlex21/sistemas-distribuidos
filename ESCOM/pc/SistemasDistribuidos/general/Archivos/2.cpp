@@ -1,0 +1,36 @@
+#include <iostream>
+#include <ctime>
+#include <cstdlib>
+
+#define Factor 4000
+
+int veces(char* cadena,const char* subcadena, int tam){
+	int count=0,i;
+	for(i=0;i<tam;i++){
+		if(cadena[i] == subcadena[0] && cadena[i+1] == subcadena[1] && cadena[i+2] == subcadena[2])
+			count++;
+		i+=3;	
+	}
+	return count;
+}
+using namespace std;
+int main(){
+	srand(time(NULL));
+	int i;
+	long long int tam = 26 * 26 * 26 *  4 * Factor;
+	char * cadena = (char*) malloc (sizeof(char)* tam);
+	for(i=0;i<tam;i++){
+		cadena[i] = rand()%26 + 65;
+		i++;
+		cadena[i] = rand()%26 + 65;
+		i++;
+		cadena[i] = rand()%26 + 65;
+		i++;
+		cadena[i] = ' ';
+	}
+	//~ for(i=0;i<tam;i++)
+		//~ printf("%c",cadena[i]);
+	cout <<veces(cadena,"IPN",tam) <<endl;
+	free(cadena);
+	return 0;
+}

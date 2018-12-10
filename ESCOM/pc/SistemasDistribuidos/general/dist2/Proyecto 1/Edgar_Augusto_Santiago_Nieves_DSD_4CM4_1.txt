@@ -1,0 +1,677 @@
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+class Date{
+	private:
+		int month;
+		int day;
+		int year;
+		string namesDays[7] = {"Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"};
+
+	public:
+		Date(int = 7, int = 4, int = 2012);
+		void setDate(int, int, int);
+		void showDate();
+		string dayOfWeek(){
+			if(month < 3){
+				month += 12;
+				year--;
+			}
+			int century = year / 100;
+			int yy = year % 100;
+			int T = day + (26 * (month + 1)) / 10 + yy + yy / 4 + century / 4 - 2 * century;
+			while(T < 0)
+				T += 7;
+			return namesDays[T % 7];
+		}
+};
+
+Date :: Date(int mm, int dd, int yyyy){
+	month = mm;
+	day = dd;
+	year = yyyy;
+}
+
+void Date :: setDate(int mm, int dd, int yyyy){
+	month = mm;
+	day = dd;
+	year = yyyy;
+	return;
+}
+
+void Date :: showDate(){
+	cout << "The date is ";
+	cout << setfill('0')
+		 << setw(2) << month << '/'
+		 << setw(2) << day << '/'
+		 << setw(2) << year % 100 << endl;
+	return;
+}
+
+int main(){
+	Date a, b, c(8, 26, 2016);
+
+	b.setDate(12, 25, 2009);
+	a.showDate();
+	cout << a.dayOfWeek() << endl;
+	b.showDate();
+	cout << b.dayOfWeek() << endl;
+	c.showDate();
+	cout << c.dayOfWeek() << endl;
+}
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+class Date{
+	private:
+		long yyyymmdd;
+
+	public:
+		Date(int = 7, int = 4, int = 2012);
+		Date(long);
+		void setDate(int, int, int);
+		void showDate();
+		
+};
+
+
+Date :: Date(long date){
+	yyyymmdd = date;
+}
+
+Date :: Date(int mm, int dd, int yyyy){
+	yyyymmdd = (long)(yyyy) << 18 | (long)(mm) << 9 | (long)(dd);
+}
+
+void Date :: setDate(int mm, int dd, int yyyy){
+	yyyymmdd = (long)(yyyy) << 18 | (long)(mm) << 9 | (long)(dd);
+	return;
+}
+
+void Date :: showDate(){
+	cout << "The date is ";
+	int year = yyyymmdd >> 18;
+	int month = (yyyymmdd >> 9) & ((1ll << 9) - 1);
+	int day = yyyymmdd & ((1ll << 9) - 1);
+
+	cout << setfill('0')
+		 << setw(2) << month << '/'
+		 << setw(2) << day << '/'
+		 << setw(2) << year % 100 << endl;
+	return;
+}
+
+int main(){
+	Date a, b, c(8, 26, 2016);
+
+	b.setDate(12, 25, 2009);
+	a.showDate();
+	b.showDate();
+	c.showDate();
+}
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <stdlib.h>
+
+using namespace std;
+
+
+class Elevator{
+	private:
+	    int elNum;
+	    int currentFloor; 
+	    int highestFloor;
+	public:
+		Elevator(int = 1, int = 1, int = 15);
+		bool request(int);
+};
+
+Elevator::Elevator(int idnum, int cfloor, int maxfloor){
+	elNum = idnum;
+	currentFloor = cfloor;
+	highestFloor = maxfloor;
+}
+
+bool Elevator::request(int newfloor){
+	if(currentFloor == newfloor)
+		return false;
+	if (newfloor < 1 || newfloor > highestFloor);
+	else if (newfloor > currentFloor){
+    	cout << "\nElevator " << elNum
+        	<< " starting at floor " << currentFloor << endl;
+    	while (newfloor > currentFloor){
+      		currentFloor++;
+      		cout << " Going Up - now at floor " << currentFloor << endl;
+    	}
+    	cout << "Elevator " << elNum
+        	 << " stopping at floor " << currentFloor << endl;
+  	}else{
+    	cout << "\nElevator " << elNum
+        	<< " starting at floor " << currentFloor << endl;
+    	while (newfloor < currentFloor){
+      		currentFloor--;
+      		cout << " Going Down - now at floor " << currentFloor << endl;
+    	}
+    	cout << "Elevator " << elNum
+       		<< " Stopping at floor " << currentFloor << endl;
+  	}
+  	return true;
+}
+
+int main(){
+	srand(time(NULL));
+	Elevator a;
+	for(int i = 0; i < 5; i++){
+		int nextNumber;
+		do{ 
+			nextNumber = rand() % 15 + 1;
+		}while(!a.request(nextNumber));
+	}
+	return 0;
+}
+
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <stdlib.h>
+
+using namespace std;
+
+
+class Circle{
+	private:
+		int xCenter;
+		int yCenter;
+		double radius;
+		static double scaleFactor;
+	public:
+		Circle(int = 0, int = 0, double = 0.0);
+		void showCircle();
+		void setScale(double);
+};
+
+double Circle :: scaleFactor = 1.0;
+
+Circle :: Circle(int x, int y, double r){
+	xCenter = x;
+	yCenter = y;
+	radius = r;
+}
+
+void Circle :: setScale(double s){
+	scaleFactor = s;
+}
+
+void Circle :: showCircle(){
+	cout << "The center of the circle: (" << xCenter << ", " << yCenter << ")\n";
+	cout << "The radius of the circle: " << radius * scaleFactor << endl << endl;
+}
+
+int main(){
+	Circle a;
+	Circle b(10, 5, 3.0);
+	Circle c(1, 1, 1.0);
+
+	a.showCircle();
+	b.showCircle();
+	c.showCircle();
+
+	a.setScale(2.0);
+	a.showCircle();
+	b.showCircle();
+	c.showCircle();
+
+	b.setScale(.9381928391);
+	a.showCircle();
+	b.showCircle();
+	c.showCircle();
+	
+	return 0;
+}
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <stdlib.h>
+
+using namespace std;
+
+
+class Fractions{
+	private:
+		int num;
+		int denum;
+	public:
+		Fractions(int = 0, int = 1);
+		Fractions(const Fractions&);
+		void setValues(int, int);
+		void showFractions();
+		Fractions operator + (Fractions&);
+		Fractions operator - (Fractions&);
+		Fractions operator / (Fractions&);
+		Fractions operator * (Fractions&);
+
+};
+
+Fractions :: Fractions(int x, int y){
+	num = x;
+	denum = y;
+}
+
+void Fractions :: showFractions(){
+	cout << num << "/" << denum << endl << endl;
+}
+
+Fractions :: Fractions(const Fractions& aux){
+	num = aux.num;
+	denum = aux.denum;	
+}
+
+void Fractions :: setValues(int x, int y){
+	num = x;
+	denum = y;
+}
+
+Fractions Fractions :: operator + (Fractions& op1){
+	Fractions temp;
+	temp.num = num * op1.denum + denum * op1.num;
+	temp.denum = denum * op1.denum;
+	return temp;
+}
+
+Fractions Fractions :: operator - (Fractions& op1){
+	Fractions temp;
+	temp.num = num * op1.denum - denum * op1.num;
+	temp.denum = denum * op1.denum;
+	return temp;
+}
+
+Fractions Fractions :: operator / (Fractions& op1){
+	Fractions temp;
+	temp.num = num * op1.denum;
+	temp.denum = denum * op1.num;
+	return temp;
+}
+
+Fractions Fractions :: operator * (Fractions& op1){
+	Fractions temp;
+	temp.num = num * op1.num;
+	temp.denum = denum * op1.denum;
+	return temp;
+}
+
+
+
+
+
+int main(){
+	Fractions a(5, 3), b(7, 5), c;
+
+	cout << "A = ";
+	a.showFractions();
+	cout << "B = ";
+	b.showFractions();
+
+	cout << "Sum A + B = ";
+	c = a + b;
+	c.showFractions();
+
+	cout << "Sum A - B = ";
+	c = a - b;
+	c.showFractions();
+
+	cout << "Sum A * B = ";
+	c = a * b;
+	c.showFractions();
+
+	cout << "Sum A / B = ";
+	c = a / b;
+	c.showFractions();
+
+}
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+class Date{
+	private:
+		int month;
+		int day;
+		int year;
+	public:
+		Date(int = 7, int = 4, int = 2012);
+		void showDate();
+		void swap(Date &);		
+};
+
+Date::Date(int mm, int dd, int yyyy){
+	month = mm;
+	day = dd;
+	year = yyyy;
+}
+
+void Date::showDate(){
+	cout << "The date is ";
+	cout << setfill('0') << setw(2) << month << '/' << setw(2) << day << '/' << setw(2) << year % 100; 
+	cout << endl;
+}
+
+void Date::swap(Date &temp){
+	int tempstore;
+	tempstore = temp.day;
+	temp.day = day;
+	day = tempstore;
+
+	tempstore = temp.month;
+	temp.month = month;
+	month = tempstore;
+
+	tempstore =  temp.year;
+	temp.year = year;
+	year = tempstore;
+	return;
+}
+
+int main(){
+	Date oldDate(4,3,1999);
+	Date newDate(12,18,2012);
+
+	cout << "The date stored in oldDate is ";
+	oldDate.showDate();
+
+	cout << "\nThe date stored in newDate is ";
+	newDate.showDate();
+
+	newDate.swap(oldDate);
+	cout << "\n\nAfter the swap:\n\n";
+	cout << "The date stored in oldDate is ";
+	oldDate.showDate();
+	
+	cout << "\nThe date stored in newDate is ";
+	newDate.showDate();
+	cout << '\n';
+	return 0;
+}
+
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+class JulianDate;
+
+class GregorianDate{
+	private:
+		int month, day, year;
+  	public:
+    	GregorianDate(int = 7, int = 4, int = 2012);
+    	operator JulianDate();
+    	void showDate();
+};
+
+class JulianDate{
+	private:
+    	long yyyymmdd;
+  	public:
+    	JulianDate(long = 0);
+    	void showint();
+};
+
+GregorianDate :: GregorianDate(int mm, int dd, int yyyy){
+  	month = mm;
+  	day = dd;
+  	year = yyyy;
+}
+
+GregorianDate :: operator JulianDate(){
+  	long temp;
+  	long MP, YP, T;
+  	if(month <= 2){
+  		MP = 0;
+  		YP = year - 1;
+  	}else{
+  		MP = int(0.4 * month + 2.3);
+  		YP = year;
+  	}
+  	T = int(YP / 4.0) - int(YP / 100.0) + int(YP / 400.0);
+  	return JulianDate(365 * year + 31 * (month - 1) + day + T - MP);
+}
+
+void GregorianDate :: showDate(){
+  	cout << setfill('0')
+        << setw(2) << month << '/'
+        << setw(2) << day << '/'
+        << setw(2) << year % 100;
+    cout << endl << endl;
+  	return;
+}
+
+JulianDate :: JulianDate(long ymd){
+  	yyyymmdd = ymd;
+}
+
+void JulianDate :: showint(){
+  	cout << yyyymmdd << endl << endl;
+  	return;
+}
+
+int main(){
+	GregorianDate a(1, 31, 2011), b(3, 16, 2012);
+	JulianDate c, d;
+	cout << "Date GregorianDate a: ";
+	a.showDate();
+	cout << "Date GregorianDate b: ";
+	b.showDate();
+
+	//Cast GreorianDate to JulianDate
+	c = JulianDate(a);
+	d = JulianDate(b);
+
+
+	cout << "Date JulianDate a: ";
+	c.showint();
+	cout << "Date JulianDate b: ";
+	d.showint();
+
+  	return 0;
+}
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+class Complex{
+	friend double addreal(Complex&, Complex&);
+	friend double addimag(Complex&, Complex&);
+	private:
+	    double real;
+	    double imag;
+	public:
+    	Complex(double = 0, double = 0);
+    	Complex operator [](double);
+    	void display();
+};
+
+Complex::Complex(double rl, double im){
+	real = rl;
+	imag = im;
+}
+
+Complex Complex :: operator [](double x){
+	Complex temp(real * x, imag * x);
+	return temp;
+}
+
+void Complex::display(){
+	char sign = '+';
+	
+	if(imag < 0) sign = '-';
+
+	cout << real << sign << abs(imag) << 'i';
+	return;
+}
+
+double addreal(Complex &a, Complex &b){
+	return(a.real + b.real);
+}
+
+double addimag(Complex &a, Complex &b){
+	return(a.imag + b.imag);
+}
+
+int main(){
+	Complex a(3.2, 5.6), b(1.1, -8.4);
+	double re, im;
+	cout << "\nThe first complex number is ";
+	a.display();
+	cout << "\nThe second complex number is ";
+	b.display();
+	re = addreal(a,b);
+	im = addimag(a,b);
+	Complex c(re,im);
+	cout << "\n\nThe sum of these two complex numbers is ";
+	c.display();
+	cout << endl << endl;
+	cout << "A = ";
+	a.display();
+	cout << "\nA with operator[4]: ";
+	a = a[4];
+	a.display();
+	cout << endl;
+	return 0;
+}	
+
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <stdlib.h>
+
+using namespace std;
+
+
+class Customer{
+	private:
+		int arrivalTime;
+		int gas;
+	public:
+		Customer();
+		void showDatas();
+		int getGas();
+		int getArrivalTime();
+};
+
+Customer :: Customer(){
+	arrivalTime = rand() %15 + 1;
+	gas = rand() % 13 + 3;
+}
+
+void Customer :: showDatas(){
+	cout << "gas: " << gas << endl;
+	cout << "arrival time: " << arrivalTime << endl << endl;
+
+}
+
+int Customer :: getGas(){
+	return gas;
+}
+
+int Customer :: getArrivalTime(){
+	return arrivalTime;
+}
+
+int main(){
+	srand(time(NULL));
+	for(int i = 0; i < 10; i++){
+		Customer aux;
+		aux.showDatas();
+	}
+	return 0;
+}
+
+
+********************************************************************************************************************************************************
+
+#include <iostream>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+
+class Customer{
+	private:
+		int arrivalTime;
+		int gas;
+		int type;
+	public:
+		Customer();
+		void showDatas();
+		int getGas();
+		int getArrivalTime();
+		int getType();
+};
+
+Customer :: Customer(){
+	arrivalTime = rand() %15 + 1;
+	gas = rand() % 13 + 3;
+	type = rand() % 3;
+}
+
+void Customer :: showDatas(){
+	cout << "gas: " << gas << endl;
+	cout << "arrival time: " << arrivalTime << endl;
+	if(type == 0)
+		cout << "Type of gas is: 87 octane" << endl << endl;
+	if(type == 1)
+		cout << "Type of gas is: 93 octane" << endl << endl;
+	if(type == 2)
+		cout << "Type of gas is: 97 octane" << endl << endl;
+	
+}
+
+int Customer :: getGas(){
+	return gas;
+}
+
+int Customer :: getArrivalTime(){
+	return arrivalTime;
+}
+
+int Customer :: getType(){
+	return type;
+}
+
+int main(){
+	srand(time(NULL));
+	vector <int> sumGas(3);
+	for(int i = 0; i < 10; i++){
+		Customer aux;
+		aux.showDatas();
+		sumGas[aux.getType()] += aux.getGas();
+	}
+	cout << "Total of 87 octane: " << sumGas[0] << endl;
+	cout << "Total of 93 octane: " << sumGas[1] << endl;
+	cout << "Total of 97 octane: " << sumGas[2] << endl;
+	return 0;
+}

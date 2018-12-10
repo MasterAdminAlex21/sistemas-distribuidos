@@ -1,0 +1,407 @@
+//******************************************************************************************
+//	PaqueteDatagrama.h
+/*
+	Interfaz de la clase Paquete datagrama	
+*/
+
+#ifndef PAQUETEDATAGRAMA_H_
+#define PAQUETEDATAGRAMA_H_
+#include <stdint.h>
+struct msj {
+	uint32_t secuencia; //Numero de secuencia
+	uint32_t solicitud[2]; //pareja de números enviados por el cliente para su suma
+	uint32_t respuesta; //respuesta enviada por el servidor
+};
+typedef msj mensaje; 
+
+class PaqueteDatagrama {
+public:
+   //cadena (datos), longitud de la cadena, dirección IP_externa, puerto_externo
+   PaqueteDatagrama(char *, unsigned int , char *, int );
+   //mensaje vacío de una longitud determinada para la recepción y puerto de recepcion
+   PaqueteDatagrama(unsigned int);
+   ~PaqueteDatagrama();
+   char * obtieneDireccion();
+   unsigned int obtieneLongitud();
+   int obtienePuerto();
+   char *obtieneDatos();
+   void inicializaPuerto(int);
+   void inicializaIp(char *);
+   void inicializaDatos(char *);
+private:
+   char *datos;
+   char ip[16];   
+   unsigned int longitud;
+   int puerto;  
+};
+
+#endif
+
+//******************************************************************************************
+//	PaqueteDatagrama.cpp
+/*
+	Implementación de la clase Paquete datagrama que encapsula una dirección ip, un puerto, y datos;
+	ya sea para recibirlo o para enviarlo con la clase SocketDatagrama.
+*/
+
+#include <string.h>
+#include "PaqueteDatagrama.h"
+
+using namespace std;
+
+PaqueteDatagrama::PaqueteDatagrama(char *datosE, unsigned int longitudE, char *ipE, int puertoE){
+   longitud = longitudE;
+   datos = new char[longitudE + 1];
+   memcpy(datos, datosE, longitudE);   
+   strcpy(ip, ipE);
+   puerto = puertoE;
+}
+
+PaqueteDatagrama::PaqueteDatagrama(unsigned int longitudE){
+   longitud = longitudE;
+   datos = new char[longitudE + 1];
+   strcpy(datos, "");   
+   strcpy(ip, "");
+}
+
+PaqueteDatagrama::~PaqueteDatagrama(){
+   delete []datos;
+}
+
+char * PaqueteDatagrama::obtieneDireccion(){
+   return ip;
+}
+
+unsigned int PaqueteDatagrama::obtieneLongitud(){
+   return longitud;
+}
+
+int PaqueteDatagrama::obtienePuerto(){
+   return puerto;
+}
+
+char * PaqueteDatagrama::obtieneDatos(){
+   return datos;
+}
+
+void PaqueteDatagrama::inicializaPuerto(int pu){
+   puerto = pu;
+   return;
+}
+
+void PaqueteDatagrama::inicializaIp(char *IP){
+   strcpy(ip, IP);
+   return;
+}
+
+void PaqueteDatagrama::inicializaDatos(char *DATOS){
+   memcpy(datos, DATOS, longitud);
+}
+
+//******************************************************************************************
+//	SocketDatagrama.h
+/*
+	Interfaz de la clase SocketDatagrama
+*/
+
+#ifndef SOCKETDATAGRAMA_H_
+#define SOCKETDATAGRAMA_H_
+
+#include "PaqueteDatagrama.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/time.h>
+#include <errno.h>
+
+class SocketDatagrama{
+public:
+   SocketDatagrama(int); //puerto local no se podrá cambiar para el proceso. Si es cero, lo asigna el sistema operativo
+   ~SocketDatagrama();
+   //Recibe un paquete tipo datagrama proveniente de este socket
+   int recibe(PaqueteDatagrama & p);
+   //Envía un paquete tipo datagrama desde este socket
+   int envia(PaqueteDatagrama & p);
+   void setTimeout(time_t segundos, suseconds_t microsegundos);
+   void unsetTimeout( );
+   int recibeTimeout(PaqueteDatagrama & p); 	
+private:   
+   struct sockaddr_in direccionLocal;
+   struct sockaddr_in direccionForanea;
+   struct timeval tiempoFuera;
+   int s; //ID socket
+   bool timeout;
+};
+
+#endif
+
+//******************************************************************************************
+//	SocketDatagrama.cpp
+/*
+	Implementación de la clase SocketDatagrama que se usa para crear un socket datagrama
+	y para enviar/recibir datagramas utilizando la clase PaqueteDatagrama.
+*/
+
+#include "SocketDatagrama.h"
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <strings.h>
+#include <iostream>
+#include <errno.h>
+#include <stdlib.h>
+
+using namespace std;
+
+SocketDatagrama::SocketDatagrama(int puertoL)
+{
+   s = socket(AF_INET, SOCK_DGRAM, 0);
+   if( s == -1 ){
+      cout << "Error al asociar el socket"<<endl;
+      exit(1);
+   }
+   bzero((char *)&direccionLocal, sizeof(struct sockaddr_in));
+   bzero((char *)&direccionForanea, sizeof(struct sockaddr_in));      
+
+   direccionLocal.sin_family = AF_INET;
+   direccionLocal.sin_addr.s_addr = INADDR_ANY;
+   direccionLocal.sin_port = htons(puertoL);
+   int b = bind(s, (struct sockaddr *)&direccionLocal,sizeof(direccionLocal));
+
+   if( b == -1 ){
+      cout << "Error al asociar el socket"<<endl;
+      exit(1); 
+   }
+}
+
+SocketDatagrama::~SocketDatagrama()
+{
+   close(s);
+}
+
+//Recibe un paquete tipo datagrama proveniente de este socket
+int SocketDatagrama::recibe(PaqueteDatagrama & p)
+{
+   int retorno;
+   socklen_t clilen; //Ojo no compila si es un tipo int en C
+   clilen = sizeof(direccionForanea);
+   retorno = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+   p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+   p.inicializaIp(inet_ntoa(direccionForanea.sin_addr));
+   
+   return retorno;
+}
+
+//Envía un paquete tipo datagrama desde este socket
+int SocketDatagrama::envia(PaqueteDatagrama & p)
+{
+   direccionForanea.sin_family = AF_INET;
+   direccionForanea.sin_addr.s_addr = inet_addr(p.obtieneDireccion());
+   direccionForanea.sin_port = htons(p.obtienePuerto());
+   sendto(s, (char *)p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *) &direccionForanea, sizeof(direccionForanea));
+  
+
+}
+void SocketDatagrama::setTimeout(time_t segundos, suseconds_t microsegundos){
+	timeout = true;	
+	tiempoFuera.tv_sec = segundos;
+	tiempoFuera.tv_usec = microsegundos;
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tiempoFuera, sizeof(tiempoFuera));	
+}
+void SocketDatagrama::unsetTimeout(){
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, NULL, 0);
+	timeout = false;
+}
+
+int SocketDatagrama::recibeTimeout(PaqueteDatagrama & p)
+{
+   int retorno;
+   struct timeval tiempo1;
+   struct timeval tiempo2;
+   struct timeval res;
+		
+   socklen_t clilen; //Ojo no compila si es un tipo int en C
+   clilen = sizeof(direccionForanea);
+   gettimeofday(&tiempo1, NULL);
+   retorno = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+   if(retorno < 0){
+	if (errno == EWOULDBLOCK)
+	{
+		fprintf(stderr, "Tiempo para recepción transcurrido\n");	
+	}	
+	else
+	fprintf(stderr, "Error en recvfrom\n");
+    }
+    else{
+		gettimeofday(&tiempo2, NULL);
+		timersub(&tiempo2,&tiempo1,&res);
+		cout << res.tv_sec << " " << res.tv_usec << endl;		
+	}	
+   p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+   p.inicializaIp(inet_ntoa(direccionForanea.sin_addr));
+   
+   return retorno;
+}
+
+//******************************************************************************************
+//	Header.h
+/*
+	Definición de estructuras usadas para el manejo y transmisión de mensajes entre el cliente
+	y los servidores.
+*/
+
+#ifndef HEADER_H_
+#define HEADER_H_
+
+struct registro{
+	string celular;
+	string CURP;
+	string partido;
+};
+
+struct peticion{
+	int tipo;
+	string buscar;
+};
+
+struct voto{
+	string partido;
+	int num;
+};
+
+struct respuesta{
+	int tipo;
+	voto v[10];
+	string partido;
+};
+
+#endif
+
+//******************************************************************************************
+//	cliente.cpp
+/*
+	Main del cliente. Recibe como parámetro un entero que indica el tipo de consulta. El tipo
+	de consulta 1 muestra los votos totales hasta ese momento en todos los servidores. El tipo
+	de consulta 2 muestra por quién ha votado el usuario del que se proporcione la CURP o 
+	teléfono como segundo parámetro.
+	Según el tipo de consulta que se realice rellena la estructura petición y la envía a cada
+	uno de los servidores y espera las respuestas.
+*/
+
+#include "SocketDatagrama.h"
+#include "PaqueteDatagrama.h"
+#include <iostream>
+#include <cstdlib>
+#include <map>
+#include <cstring>
+#define MAXPET 5
+using namespace std;
+#include "Header.h"
+
+string identificar( string buscar ){
+	for( int i = 0; i < buscar.size(); i++ ){
+		if( buscar[i] < '0' || buscar[i] > '9' ){
+			return "CURP";
+		}
+	}
+	return "teléfono";
+}
+
+int puerto = 8000;	//Puerto del socket
+int port = 7200;	//Puerto del servidor
+char ip[] = "127.0.0.1";
+
+int main( int argc, char* argv[] ){
+	if( argc < 2 ){
+		cout << "Forma de uso: programa tipo_petición parametros\n";
+		cout << "Tipo 1: Número de votos totales\n";
+		cout << "Tipo 2: Por quién ha votado un usuario, se tiene que agregar como parámetro la CURP o el número de teléfono\n";
+		exit(0);
+	}
+
+	string buscar;
+	int n = atoi( argv[1] );
+	peticion pet;
+	respuesta res;
+
+	switch( n ){
+		case 1:
+			pet.tipo = 1;
+		break;
+		case 2:
+			buscar = argv[2];
+			pet.tipo = 2;
+			pet.buscar = buscar;
+		break;
+		default:
+			cout << "Tipo de consulta inválida"<<endl;
+			exit(0);
+	}
+
+	int rec, cont = 0;
+	map < string, int > mapa;
+	string peticion2;
+	SocketDatagrama *socket = new SocketDatagrama( puerto );
+	PaqueteDatagrama *paquete;
+	socket->setTimeout( 0, 125000 );
+
+	for( int i = 0, j = 0; i < 8; i++ ){
+		for( j = 0; j < MAXPET; j++ ){
+			paquete = new PaqueteDatagrama( (char *)&pet, sizeof(peticion), ip, port+i );
+			socket->envia( *paquete );
+
+			paquete = new PaqueteDatagrama( sizeof(respuesta) );
+			rec = socket->recibe( *paquete );
+			if( rec >= 0 ) break;
+		}
+		if( j == MAXPET ){
+			cout << "El servidor " << i << " no respondió" << endl;
+			cont++;
+		}
+		else{
+			memcpy( &res, paquete->obtieneDatos(), rec );
+
+			if( pet.tipo == 1 ){
+				for( int i = 0; i < 10; i++ ){
+					if( res.v[i].partido != "" )
+						mapa[ res.v[i].partido ] += res.v[i].num;
+				}
+			}
+			else{
+				if( res.partido != "" )
+					peticion2 = res.partido;
+			}
+
+		}
+	}
+	
+	if( cont == 8 ){
+		cout << "Ningún servidor se encontró activo" <<endl;
+		exit(0);
+	}
+	if( pet.tipo == 1 ){
+		cout << "Los votos totales hasta ahora son: " << endl;
+		for( map< string, int >::iterator it = mapa.begin(); it != mapa.end(); it++  ){
+			cout << it->first << ": " << it->second << endl;
+		}
+	}
+	else{
+		cout << "El votante con " << identificar( buscar ) << " " << buscar << " ha votado por: " << peticion2 << endl;
+	}
+
+}
+
+//******************************************************************************************
+//	Makefile
+/*
+	Archivo para compilar el cliente
+*/
+all: cliente
+cliente: cliente.cpp SocketDatagrama.o Header.h
+	g++ cliente.cpp SocketDatagrama.o PaqueteDatagrama.o -o cliente
+SocketDatagrama.o: SocketDatagrama.h SocketDatagrama.cpp PaqueteDatagrama.o
+	g++ SocketDatagrama.cpp -c
+PaqueteDatagrama.o: PaqueteDatagrama.h PaqueteDatagrama.cpp
+	g++ PaqueteDatagrama.cpp -c
+

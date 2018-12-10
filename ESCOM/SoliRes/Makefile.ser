@@ -1,0 +1,7 @@
+compile: PaqueteDatagrama.o SocketDatagrama.o
+	g++ Respuesta.cpp servidor.cpp PaqueteDatagrama.o SocketDatagrama.o -o servidor
+	g++ Solicitud.cpp cliente.cpp PaqueteDatagrama.o SocketDatagrama.o -o clientecpp
+PaqueteDatagrama.o:
+	g++ -c PaqueteDatagrama.cpp
+SocketDatagrama.o:
+	g++ -c SocketDatagrama.cpp

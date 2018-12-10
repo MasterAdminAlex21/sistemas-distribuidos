@@ -1,0 +1,701 @@
+********************************************************* Ejercicio 8 de la página 451 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+// class declaration section
+class Date{
+	private:
+    	int month;
+    	int day;
+    	int year;
+  	public:
+    	Date(int = 7, int = 4, int = 2012); // constructor
+    	void setDate(int, int, int);   // member method to copy a date
+    	void showDate(); 
+    	void dayOfWeek();
+};
+
+// class implementation section
+Date::Date(int mm, int dd, int yyyy){
+  	month = mm;
+  	day = dd;
+  	year = yyyy;
+}
+
+void Date::setDate(int mm, int dd, int yyyy){
+  	month = mm;
+  	day = dd;
+  	year = yyyy;
+  	return;
+}
+
+void Date::showDate(){
+    cout << "The date is ";
+    cout << setfill('0') << setw(2) << month << '/' << setw(2) << day << '/' << setw(2) << year % 100; // extract the last 2 year digits
+    cout << endl;
+  return;
+}
+
+void Date::dayOfWeek(){
+	int newyear, fday, T, century;
+	string arr[7];
+
+	arr[0] = "Saturday";
+	arr[1] = "Sunday";
+	arr[2] = "Monday";
+	arr[3] = "Tuesday";
+	arr[4] = "Wednesday";
+	arr[5] = "Thursday";
+	arr[6] = "Friday";
+
+	if(month < 3){
+		month = month + 12;
+		year = year -1;
+	}
+
+	century = int(year / 100);
+	newyear = year % 100;
+
+	T = day + int(26 * (month + 1) / 10) + newyear + int(newyear / 4) + int(century / 4) - 2 * century;
+
+	fday = T % 7;
+	if(fday < 0)
+		fday = fday + 7;
+
+	cout << arr[fday] << endl;
+}
+
+int main(){
+	int y, m, d;
+	Date c;
+	cout << "Input year, month and day separated by a space: ";
+	cin >> y >> m >> d;
+	c.setDate(m, d, y);
+  	c.showDate(); 
+  	c.dayOfWeek();
+  	return 0;
+}
+
+
+********************************************************* Ejercicio 3 de la página 462 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+class Date{
+	private:
+		long yyyymmdd;
+	public:
+		Date(long = 19951011L);   // constructor
+		long convert(int, int, int);
+		void showDate();      // member method to display a date
+};
+
+Date::Date(long lol){
+	yyyymmdd = lol;
+}
+
+// class implementation section
+ long Date::convert(int mm, int dd, int yyyy){
+ 	
+ 	long lol;
+	lol = yyyy * 10000 + mm * 100 + dd;
+
+	return lol;
+}
+
+
+/*Date::Date(long yyyymmdd){
+  year = int(yyyymmdd/10000.0);   // extract the year
+  month = int( (yyyymmdd - year * 10000.0)/100.00 ); // extract the month
+  day = int(yyyymmdd - year * 10000.0 - month * 100.0); // extract the day
+}*/
+
+void Date::showDate(){
+	int year, month, day;
+
+	year = int(yyyymmdd/10000.0);   // extract the year
+  	month = int( (yyyymmdd - year * 10000.0)/100.00 ); // extract the month
+  	day = int(yyyymmdd - year * 10000.0 - month * 100.0); // extract the day
+
+	cout << "The date is ";
+	cout << setfill('0') << setw(2) << month << '/' << setw(2) << day << '/' << setw(2) << year % 100 << endl; // extract the last 2 year digitscout << endl;
+  	return;
+}
+
+int main(){
+	int y, m, d;
+	long aux;
+	Date q;
+	
+	cout << "Input  month, day and year separated by a space: ";
+	cin >> m >>  d >> y ;
+	aux = q.convert(m, d, y); 
+
+	Date c(aux);
+	c.showDate();
+
+  	return 0;
+} 
+
+********************************************************* Ejercicio 6 de la página 472 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+
+// class declaration section
+class Elevator{
+	private:
+	int elNum;
+	int currentFloor;
+	int highestFloor;
+	public:
+	Elevator(int = 1, int = 1, int = 15);// constructor
+	void request(int);
+};
+
+//class implementation section
+Elevator::Elevator(int idnum, int cfloor, int maxfloor){
+	elNum = idnum;
+	currentFloor = cfloor;
+	highestFloor = maxfloor;
+}
+
+void Elevator::request(int newfloor){
+	if(newfloor < 1 || newfloor > highestFloor || newfloor == currentFloor)
+	;// do nothing
+	else if (newfloor > currentFloor){// move elevator up
+		cout << "\nElevator " << elNum << " starting at floor " << currentFloor << endl;
+		while (newfloor > currentFloor){
+			currentFloor++;// add one to current floor
+			cout << " Going Up - now at floor " << currentFloor << endl;
+		}
+		cout << "Elevator " << elNum << " stopping at floor " << currentFloor << endl;
+	}else{// move elevator down
+		cout << "\nElevator " << elNum << " starting at floor " << currentFloor << endl;
+		while (newfloor < currentFloor){
+			currentFloor--;   // subtract one from current floor
+			cout << " Going Down - now at floor " << currentFloor << endl;
+		}
+		cout << "Elevator " << elNum << " Stopping at floor " << currentFloor << endl;
+	}
+	return;
+}
+
+int main(){
+
+	Elevator a;
+	int r, aux, c = 0;
+
+	srand(time(NULL));
+
+	aux = 1;
+	
+	while(c < 5){
+		r = rand() % 14 + 1;
+		//cout << r << endl;
+
+		if(r != aux){
+			a.request(r);
+			c++;
+			aux = r;
+		}else
+			cout << "\nYou are already on that floor" << endl;
+ 
+	}
+	return 0;
+}
+
+********************************************************* Ejercicio 2 de la página 481 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+class Circle{
+	private:
+   	int xCenter;
+   	int yCenter;
+   	double radius;
+    static double scaleFactor;
+  public:
+   	Circle(int = 0, int = 0, double = 3.0); 
+   	void scale(double); 
+    void showCircle(); 
+};
+
+Circle::Circle(int x, int y, double r){
+  	xCenter = x;
+  	yCenter = y;
+  	radius = r;
+}
+
+void Circle::scale(double f){
+  	radius *= f;
+  	return;
+}
+
+void Circle::showCircle(){
+  cout << "X = " << xCenter << " Y = " << yCenter << " Radius = " << radius << endl;
+}
+int main(){
+	int equis, ye;
+  double fact, reidius;
+	 
+  
+  cout << "Input the x, y and radius of the circle separated by a space: ";
+  cin >> equis >> ye >> reidius;
+  Circle c(equis, ye, reidius);
+
+  c.showCircle();
+
+  cout << "Input the scale factor: ";
+	cin >> fact;
+
+  c.scale(fact);
+  c.showCircle();
+
+
+  	return 0;
+}
+
+********************************************************* Ejercicio 11 de la página 507 ********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+class Fraction{
+	private:
+		int num;
+		int denum;
+	public:
+		Fraction(int num = 1, int denum = 1);
+		Fraction addition(Fraction);
+		Fraction subtraction(Fraction);
+		Fraction multiplication(Fraction);
+		Fraction division(Fraction);
+		void showFrac();
+};
+
+Fraction::Fraction(int x, int y){
+	num = x;
+	denum = y;
+}
+ void Fraction::showFrac(){
+ 	cout << num << '/' << denum << endl; 
+}
+
+Fraction Fraction::addition(Fraction dos){
+	Fraction res;
+	res.num = num * dos.denum + dos.num * denum;
+	res.denum = denum * dos.denum;
+
+	int gcd = __gcd(res.num, res.denum);
+	res.num = res.num / gcd;
+	res.denum = res.denum / gcd;
+
+	return res;
+}
+
+Fraction Fraction::subtraction(Fraction dos){
+	Fraction res;
+
+	res.num = num * dos.denum - dos.num * denum;
+	res.denum = denum * dos.denum;
+
+	int gcd = __gcd(res.num, res.denum);
+	res.num = res.num / gcd;
+	res.denum = res.denum / gcd;
+
+	return res;
+}
+
+Fraction Fraction::multiplication(Fraction dos){
+	Fraction res;
+	res.num = num * dos.num ;
+	res.denum = denum * dos.denum;
+
+	int gcd = __gcd(res.num, res.denum);
+	res.num = res.num / gcd;
+	res.denum = res.denum / gcd;
+
+	return res;
+}
+
+Fraction Fraction::division(Fraction dos){
+	Fraction res;
+	res.num = num * dos.denum;
+	res.denum = denum * dos.num;
+
+	int gcd = __gcd(res.num, res.denum);
+	res.num = res.num / gcd;
+	res.denum = res.denum / gcd;
+	
+	return res;
+}
+ 
+int main(){
+	int p, q, a, b;
+	cout << "Input the values of the num and denum of both fractions separated by a space" << endl;
+	cin >> p >> q >> a >> b;
+	Fraction uno(p, q), dos(a, b), tres;
+	
+	tres  = uno.addition(dos);
+	cout << "Addition: ";
+	tres.showFrac();
+
+	tres  = uno.subtraction(dos);
+	cout << "Subtraction: ";
+	tres.showFrac();
+
+	tres  = uno.multiplication(dos);
+	cout << "Multiplication: ";
+	tres.showFrac();
+
+	tres  = uno.division(dos);
+	cout << "Division: ";
+	tres.showFrac();
+
+
+	return 0;
+}
+
+********************************************************* Ejercicio 4 de la página 518 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+// class declaration section
+class Date{
+	private:
+		int month;
+		int day;
+		int year;
+	public:
+		Date(int = 7, int = 4, int = 2012);   // constructor
+		void showDate();      // method to display a date
+		void swap(Date&);    // method to swap two dates
+};
+
+// class implementation section
+Date::Date(int mm, int dd, int yyyy){
+	month = mm;
+	day = dd;
+	year = yyyy;
+}
+
+void Date::showDate(){
+ 	cout << setfill('0') << setw(2) << month << '/' << setw(2) << day << '/' << setw(2) << year % 100;
+ 	return;
+}
+
+void Date::swap(Date& temp){ // method to swap two dates
+  int tempstore;
+  // swap the day member
+  tempstore = temp.day;
+  temp.day = day;
+  day = tempstore;
+  // swap the month member
+  tempstore = temp.month;
+  temp.month = month;
+  month = tempstore;
+  // swap the year member
+  tempstore = temp.year;
+  temp.year = year;
+  year = tempstore;
+  return;
+}
+
+
+
+int main(){
+
+	Date oldDate(4,3,1999);
+	Date newDate(12,18,2012);
+
+	cout << "The date stored in oldDate is ";
+	oldDate.showDate();
+	cout << "\nThe date stored in newDate is ";
+	newDate.showDate();
+	newDate.swap(oldDate);  // swap dates by passing an address
+	cout << "\n\nAfter the swap:\n" <<endl;
+	cout << "The date stored in oldDate is ";
+	oldDate.showDate();
+	cout << "\nThe date stored in newDate is ";
+	newDate.showDate();
+	cout << endl;
+
+	return 0;
+}
+
+********************************************************* Ejercicio 3 de la página 528 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+
+// class declaration section
+class Date{
+  private:
+    int month, day, year;
+  public:
+    Date(int = 7, int = 4, int = 2012);  // constructor
+    // constructor for converting from long to Date
+    Date(long);
+    void showDate();
+    int julianDate();
+};
+
+// class implementation section
+Date::Date(int mm, int dd, int yyyy){  // constructor
+	month = mm;
+	day = dd;
+	year = yyyy;
+}
+
+// constructor for converting from long to Date
+Date::Date(long findate){
+	year = int(findate/10000.0);
+	month = int((findate - year * 10000.0)/100.0);
+	day = int(findate - year * 10000.0 - month * 100.0);
+}
+
+// member function to display a date
+void Date::showDate(){
+ 	cout << setfill('0') << setw(2) << month << '/' << setw(2) << day << '/' << setw(2) << year % 100;
+  	return;
+}
+
+int Date::julianDate(){
+	int mp, yp, T, Julian;
+	if(month <= 2){
+		mp = 0; 
+		yp = year - 1;
+	}else{
+		mp = int(0.4 * month + 2.3);
+		yp = year;
+	}
+	T = int(yp / 4) - int(yp / 100) + int(yp / 400);
+	Julian = 365 * year + 31 * (month - 1) + day + T - mp;
+
+	return Julian;
+}
+
+int main(){
+
+	int x, y, z;
+
+	cout << "Input  month, day and year separated by a space: ";
+	cin >> x >> y >> z;
+	Date a(x, y, z);
+	
+	cout << "Your date is: ";
+	a.showDate();
+	
+	cout << "\nThe Julian date is: " << a.julianDate() << endl;
+
+	return 0;
+}
+
+********************************************************* Ejercicio 4 de la página 533 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+// class declaration section
+class Complex{
+	// friends list
+	friend double addreal(Complex&, Complex&);
+	friend double addimag(Complex&, Complex&);
+	private:
+	double real;
+	double imag;
+	public:
+	Complex(double = 0, double = 0);  // constructor
+	void display();
+	Complex operator[](double);
+};
+
+// class implementation section
+Complex::Complex(double rl, double im){
+	real = rl;
+	imag = im;
+}
+
+void Complex::display(){
+	char sign = '+';
+	if(imag < 0) sign = '-';
+  	cout << real << sign << abs(imag) << 'i' << endl;
+  	return;
+}
+
+// friend implementations
+double addreal(Complex &a, Complex &b){
+  	return(a.real + b.real);
+}
+
+double addimag(Complex &a, Complex &b){
+  	return(a.imag + b.imag);
+}
+
+Complex Complex::operator[](double by){
+	Complex hi;
+
+	hi.real = real * by;
+	hi.imag = imag * by;
+
+	return hi;
+}
+
+int main(){
+	
+	double q, w, f;
+
+	cout << "Input the real and imaginary numbers separated by a space: ";
+	cin >> q >> w;
+	Complex a(q, w), b;
+	a.display();
+
+
+
+	cout << "Iput the factor: ";
+	cin >> f;
+
+	b = a[f];
+
+	
+	cout << "Using the factor: ";
+	b.display();
+
+	return 0;
+}
+
+********************************************************* Ejercicio 9 de la página 561 *********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+// class declaration section
+class Customer{
+	private:
+		int time;
+		int gallons;
+	public:
+		Customer();
+		int reqgal();
+		int reqtim();
+};
+
+Customer::Customer(){
+	time = rand() % 14 + 1;
+	gallons = rand() % 12 + 3;
+}
+
+int Customer::reqgal(){
+	return gallons;
+}
+
+int Customer::reqtim(){
+	return time;
+}
+
+int main(){
+
+	srand(time(NULL));
+	
+	int ci = 0, gall = 0, tiempo, galones;
+	Customer clientes[10];
+
+	while(ci < 10){
+		clientes[ci] = Customer();
+		tiempo = clientes[ci].reqtim();
+		galones =clientes[ci].reqgal();
+		cout << "Customer " << ci + 1 << ":  Time: " << tiempo << "  Gallons: " << galones << endl;
+		gall += galones;
+		ci++;
+	}
+
+	cout << "The gallons requested were : " << gall << endl;
+
+	return 0;
+
+}
+
+********************************************************* Ejercicio 10 de la página 562 ********************************************************
+#include <bits/stdc++.h>
+
+using namespace std;
+// class declaration section
+class Customer{
+	private:
+		int time;
+		int gallons;
+		int octane;
+	public:
+		Customer();
+		int reqgal();
+		int reqtim();
+		int reqoct();
+};
+
+Customer::Customer(){
+	
+	int aux = rand()%3;
+
+	time = rand() % 14 + 1;
+	gallons = rand() % 12 + 3;
+
+	if(aux == 0)
+		octane = 87;
+	else if(aux == 1)
+		octane = 93;
+	else
+		octane = 97;
+
+}
+
+int Customer::reqgal(){
+	return gallons;
+}
+
+int Customer::reqtim(){
+	return time;
+}
+
+int Customer::reqoct(){
+	return octane;
+}
+
+int main(){
+
+	srand(time(NULL));
+	
+	int ci = 0, gao = 0, gant = 0, gans = 0, tiempo, galones, octanos;
+	Customer clientes[10];
+
+	while(ci < 10){
+		clientes[ci] = Customer();
+		tiempo = clientes[ci].reqtim();
+		galones = clientes[ci].reqgal();
+		octanos = clientes[ci].reqoct();
+		cout << "Customer " << ci + 1 << ":  Time: " << tiempo << "  Gallons: " << galones << "  Octane: " << octanos << endl;
+		if(octanos == 87)
+			gao += galones;
+		else if(octanos == 93)
+			gant += galones;
+		else
+			gans += galones;
+		
+		ci++;
+	}
+
+	cout << "The gallons requested with 87 octane were : " << gao << endl;
+	cout << "The gallons requested with 93 octane were : " << gant << endl;
+	cout << "The gallons requested with 97 octane were : " << gans << endl;
+
+
+	return 0;
+
+}
+
+//10.c) Nothing because the simulation change a lot each row and doesn represent a real statistic
+
+//10.d) If we use a simulation to provide the gas to a station this could be very hard because we could bring a lot of one gas that isn't really used

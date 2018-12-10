@@ -1,0 +1,19 @@
+#include <stlib.h>
+#include <stdio.h>
+
+
+int main()
+
+{
+	//declaro la variable donde se guardara el radio
+
+const double PI = 3.1415926;
+	float radio;
+	 cout <<"Area del circulo/n";
+	 cout <<"Ingresa el radio/n"
+
+	 cin >>radio;
+   cin >>"area= radio * PI/n";
+   return 0;
+}
+

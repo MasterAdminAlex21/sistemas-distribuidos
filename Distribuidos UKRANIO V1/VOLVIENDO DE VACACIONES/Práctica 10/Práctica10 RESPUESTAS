@@ -1,0 +1,16 @@
+1.- Las LIbrerias netinet - EN sin_port se almacena un Unisgned Short
+
+2.1- Pertenece a la Familia AF_INET (Red) y es un Socket de Datagrama por lo tanto es UDP
+2.2  La variable Bzero sirve para almacenar el mensaje que se va a enviar en el socket.
+2.3- La longitúd del campo puerto es 16 bits (1-65536)
+2.4	Htons Convierte los tipos de dato "Unsigned Int" que utilizamos en nuestro programa
+	a tipos de dato "Host" que utiliza la API de socket .
+	Htons transforma cualquier número al formato BIG_ENDIAN que trabajan los Routers.
+	Eso se logra invirtiendo los bits.
+
+
+3.- La primera Variable se inicializa con INADDR_ANY Y PORT 8220 (7200).
+
+
+4.1-  Msg_to_client_addr
+4.2 - Para que los clientes tengan la información de a que servidor van a conectarse.

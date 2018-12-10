@@ -1,0 +1,262 @@
+************************************************************************************************************
+MensajeClienteServidor.java
+
+Clase en java para crear el objeto MessageCS en java
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+
+public class MensajeClienteServidor {
+
+    private int opcode;    
+    private int count;
+    private int offset;
+    private String name;
+    
+    public MensajeClienteServidor(){
+        opcode = 0;
+        count = 0;
+        offset = 0;
+        name = "";
+    }
+
+    public MensajeClienteServidor(int o, int c, int off, String n){
+        opcode = o;
+        count = c;
+        offset = off;
+        name = n;
+    }
+    
+    public static MensajeClienteServidor getClassFromBytes(byte[] data) {
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        int auxOpcode = buffer.getInt();
+        int auxCount = buffer.getInt();
+        int auxOff = buffer.getInt();
+
+        StringBuilder stringData = new StringBuilder();
+        byte nameByte;
+
+        while ( (nameByte = buffer.get()) != '\0' )
+            stringData.append((char) nameByte);
+        
+        MensajeClienteServidor mensaje = new MensajeClienteServidor(auxOpcode, auxCount, auxOff, stringData.toString());
+
+        return mensaje;
+    }
+    
+    public byte[] getByteRepr() {
+        ByteBuffer buffer = ByteBuffer.allocate(3 * Integer.BYTES + 255);
+
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(opcode);
+        buffer.putInt(count);
+        buffer.putInt(offset);
+        for (int i = 0; i < name.length(); i++)
+          buffer.put((byte) name.charAt(i));
+
+        return buffer.array();
+    }
+    
+    public int getOpcode() { 
+        return opcode; 
+    }
+
+    public int getCount() { 
+        return count; 
+    }
+    
+    public int getOffset() { 
+        return offset; 
+    }
+
+    public String getName() { 
+        return name; 
+    }
+    
+    public void setOpcode(int o) { 
+        opcode = o;
+    }
+
+    public void setCount(int c) { 
+        count = c; 
+    }    
+
+    public void setOffset(int o) {
+        offset = o; 
+    }
+
+    public void setName(String n) { 
+        name = n;
+    }
+
+}
+
+
+************************************************************************************************************
+MensajeServidorCliente.java
+
+Objeto messageSC en java para la serializacion de datos
+
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+public class MensajeServidorCliente {
+    
+    private final int BUF_SIZE = 1000;
+
+    private int count;   
+    private int result;
+    private int offset;
+    private byte[] data;    
+
+    public MensajeServidorCliente(){
+        count = 0;
+        result = 0;
+        offset = 0;
+        data = new byte[BUF_SIZE];
+    }
+
+    public MensajeServidorCliente(int c, int r, int o, byte[] d){
+        count = c;
+        result = r;
+        data = d;
+        offset = o;
+    }
+    
+    public byte[] getByteRepr(){
+        ByteBuffer buffer = ByteBuffer.allocate(4 * Integer.BYTES + BUF_SIZE);
+
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(count);
+        buffer.putInt(result);                 
+        buffer.putInt(offset);
+        for(int i = 0; i < data.length; i++)
+            buffer.put(data[i]);
+        return buffer.array();
+    }
+    
+    public int getCount(){ 
+        return count;
+    }
+
+    public int getResult(){  
+        return result; 
+    }
+
+    public byte[] getData(){ 
+        return data; 
+    }
+
+    public int getOffset(){
+        return offset;
+    }
+
+    public void setCount(int c){ 
+        count = c;
+    }
+
+    public void setResult(int r){ 
+        result = r;
+    }
+
+    public void setData(byte[] d){ 
+        data = d;
+    }
+
+    public void setOffset(int o){
+        offset = o;
+    }
+}
+
+
+
+
+************************************************************************************************************
+Servidor.java
+
+Archivo Servidor.java para la creacion del servidor el cual puede transferir los archivos, este es el programa 
+principal para el servidor y unicamente es necesario compilar este con javac Servidor.java y ejecutar el 
+servidor con java Servidor
+
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.net.*;
+
+public class Servidor {
+
+    static final int PUERTO = 7000;
+    static final int MAXTAM = 1000;
+
+    static final int READ = 2;   
+
+
+    static final int OK = 0;              
+    
+    public static void main(String[] args) {
+        
+
+        try {
+            DatagramSocket socket = new DatagramSocket(PUERTO);
+            System.out.println("Servicio iniciado ...");
+            boolean newService = true;
+
+            while(true){
+
+                DatagramPacket packReceive = new DatagramPacket(new byte[MAXTAM], MAXTAM);
+                socket.receive(packReceive);
+                
+                InetAddress IPCliente = packReceive.getAddress();
+                int PortCliente = packReceive.getPort();
+
+                if(newService){
+                    System.out.println("Inicio un servicio...");
+                    System.out.println("IP: " + IPCliente + "   PUERTO: " + PortCliente);
+                    newService = false;
+                }
+
+                MensajeClienteServidor petition = MensajeClienteServidor.getClassFromBytes(packReceive.getData());
+                int opcion = petition.getOpcode();
+
+                switch(opcion){
+
+                    case READ:                        
+                        byte aux[] = new byte[MAXTAM];
+                        FileInputStream fileBuffer = new FileInputStream(petition.getName());
+                       
+                        fileBuffer.available();
+                        fileBuffer.skip(petition.getOffset());
+                        int bytesRead = fileBuffer.read(aux, 0, MAXTAM); 
+                        if(bytesRead <= 1000)
+                            newService = true;
+                        
+                        System.out.println(petition.getCount() + " ::  " + bytesRead);
+                        MensajeServidorCliente message = new MensajeServidorCliente((bytesRead == -1 ? 0 : bytesRead), OK, petition.getOffset(), aux);
+                        DatagramPacket packSend = new DatagramPacket(message.getByteRepr(), message.getByteRepr().length, IPCliente, PortCliente);
+                        socket.send(packSend);
+                        break;                      
+                }
+                if(newService)
+                    System.out.println("Termino de enviar el archivo.");
+                
+            }
+
+        } catch (IOException e) { 
+            e.printStackTrace();
+        }
+    }    
+}
+
+
+
+************************************************************************************************************

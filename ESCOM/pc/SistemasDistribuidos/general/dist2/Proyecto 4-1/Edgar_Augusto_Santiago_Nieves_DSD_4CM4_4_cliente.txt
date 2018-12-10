@@ -1,0 +1,393 @@
+************************************************************************************************************
+Makefile
+
+Makefile para compilar el cliente, el programa del cliente es llamado cliente.out elaborado en C++
+
+cliente.out: SocketDatagrama.o header.h cliente.cpp
+	g++ cliente.cpp -o cliente SocketDatagrama.o PaqueteDatagrama.o
+SocketDatagrama.o: SocketDatagrama.cpp SocketDatagrama.h PaqueteDatagrama.o
+	g++ SocketDatagrama.cpp -c
+PaqueteDatagrama.o: PaqueteDatagrama.cpp PaqueteDatagrama.h
+	g++ PaqueteDatagrama.cpp -c
+
+
+************************************************************************************************************
+
+PaqueteDatagrama.h 
+
+Interfaz para el objeto paquete datagrama para el socket en C++
+
+#ifndef PAQUETEDATAGRAMA
+#define PAQUETEDATAGRAMA
+
+#include <iostream>
+#include <string.h>
+
+class PaqueteDatagrama{
+
+public:
+	PaqueteDatagrama(char *, unsigned int, char *, int);
+	PaqueteDatagrama(unsigned int);
+	~PaqueteDatagrama();
+	char *obtieneDireccion();
+	unsigned int obtieneLongitud();
+	int obtienePuerto();
+	char *obtieneDatos();
+	void inicializaPuerto(int);
+	void inicializaIP(char *);
+	void inicializaDatos(char *);
+
+private:
+	char *datos;
+	char ip[16];
+	unsigned int longitud;
+	int puerto;
+};
+
+#endif
+
+
+************************************************************************************************************
+PaqueteDatagrama.cpp
+
+La implementacion del objeto PaqueteDatagrama
+
+#include "PaqueteDatagrama.h"
+
+PaqueteDatagrama :: PaqueteDatagrama(char *d, unsigned int l, char *IP, int p){
+	
+	longitud = l;
+	puerto = p;
+	datos = new char[l];
+	memcpy(datos, d, l);
+	strcpy(ip, IP);
+}
+
+PaqueteDatagrama :: PaqueteDatagrama(unsigned int l){
+	longitud = l;
+	datos = new char[l]();
+}
+
+PaqueteDatagrama :: ~PaqueteDatagrama(){
+	delete datos;
+	longitud = 0;
+	puerto = 0;
+}
+
+char * PaqueteDatagrama :: obtieneDireccion(){
+	return ip;
+}
+
+unsigned int PaqueteDatagrama :: obtieneLongitud(){
+	return longitud;
+}
+
+int PaqueteDatagrama :: obtienePuerto(){
+	return puerto;
+}
+
+char * PaqueteDatagrama :: obtieneDatos(){
+	return datos;
+}
+
+void PaqueteDatagrama :: inicializaPuerto(int p){
+	puerto = p;
+}
+
+void PaqueteDatagrama :: inicializaIP(char * IP){
+	strcpy(ip, IP);
+}
+
+void PaqueteDatagrama :: inicializaDatos(char *d){
+	memcpy(datos, d, longitud);	
+}
+
+************************************************************************************************************
+
+SocketDatagrama.h
+
+Interfaz para el objeto SocketDatagrama en C++
+
+#ifndef SOCKETDATAGRAMA
+#define SOCKETDATAGRAMA
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <iostream>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+
+#include "PaqueteDatagrama.h"
+
+class SocketDatagrama{
+
+public:
+	SocketDatagrama(int);	
+	~SocketDatagrama();
+	void setTimeout(time_t segundos, suseconds_t microsegundos);
+   	void unsetTimeout( );
+   	struct timeval getTimeout();
+   	int recibeTimeout( PaqueteDatagrama &p ); 
+	int recibe(PaqueteDatagrama &p);
+	int envia(PaqueteDatagrama &p);
+private:
+	struct sockaddr_in direccionLocal;
+	struct sockaddr_in direccionForanea;
+	int s;
+	struct timeval tiempo;
+	bool timeout;
+
+};
+
+#endif
+
+************************************************************************************************************
+
+SocketDatagrama.cpp
+
+implementacion del objeto SocketDatagrama en C++
+
+#include "SocketDatagrama.h"
+
+SocketDatagrama :: SocketDatagrama(int puerto){
+	timeout = false;
+	s = socket(AF_INET, SOCK_DGRAM, 0);
+	bzero((char *)&direccionLocal, sizeof(direccionLocal));
+   	direccionLocal.sin_family = AF_INET;
+   	direccionLocal.sin_addr.s_addr = INADDR_ANY;
+   	direccionLocal.sin_port = htons(puerto);
+   	bind(s, (struct sockaddr *)&direccionLocal, sizeof(direccionLocal));
+}
+
+SocketDatagrama :: ~SocketDatagrama(){
+	bzero((char *)&direccionLocal, sizeof(direccionLocal));
+	close(s);
+}
+
+void SocketDatagrama :: unsetTimeout(){
+	timeout = false;
+	tiempo.tv_sec = 0;
+	tiempo.tv_usec = 0;
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tiempo, sizeof(tiempo));
+}
+
+void SocketDatagrama :: setTimeout(time_t segundos, suseconds_t microsegundos){
+	tiempo.tv_sec = segundos;
+	tiempo.tv_usec = microsegundos;
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tiempo, sizeof(tiempo));
+	timeout = true;
+}
+
+int SocketDatagrama :: recibeTimeout(PaqueteDatagrama &p){
+	struct timeval t1, t2, tr;
+
+	int retorno;
+	socklen_t clilen;
+	clilen = sizeof(direccionForanea);
+	gettimeofday(&t1, NULL);
+	retorno = recvfrom(s, (char *)p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+	gettimeofday(&t2, NULL);
+	if(retorno < 0){
+		std :: cout << "Tiempo Excedido\n" << std :: endl;
+		if(errno == EWOULDBLOCK)
+			retorno = retorno;
+		else
+			std :: cout << "Error en recvfrom" << std :: endl;
+	}
+	std :: cout << p.obtieneLongitud() << std :: endl;
+	unsetTimeout();
+	if(retorno > 0){
+		timersub(&t2, &t1, &tr);
+		std :: cout << "Tiempo de recepcion" << std :: endl;
+		std :: cout << "Segundos: " << tr.tv_sec << std :: endl;
+		std :: cout << "Microsegundos: " << tr.tv_usec << std :: endl << std :: endl;
+
+	}
+	p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+	inet_ntop(AF_INET, &(direccionForanea.sin_addr), p.obtieneDireccion(), INET_ADDRSTRLEN);
+	return retorno;
+}
+
+int SocketDatagrama :: recibe(PaqueteDatagrama &p){
+	socklen_t clilen =  sizeof(direccionForanea);
+	int retorno = recvfrom(s, p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+	p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+	inet_ntop(AF_INET, &(direccionForanea.sin_addr), p.obtieneDireccion(), INET_ADDRSTRLEN);
+	
+	std :: cout << "direccion IP del paquete recibido:" << p.obtieneDireccion() << std :: endl;
+	std :: cout << "Puerto del paquete recibido:" << p.obtienePuerto() << std :: endl << std :: endl;
+	
+	return retorno; 
+}
+
+int SocketDatagrama :: envia(PaqueteDatagrama &p){
+	socklen_t clilen =  sizeof(direccionForanea);
+	bzero((char *)&direccionForanea, sizeof(direccionForanea));
+   	direccionForanea.sin_family = AF_INET;
+   	direccionForanea.sin_addr.s_addr = inet_addr(p.obtieneDireccion());
+   	direccionForanea.sin_port = htons(p.obtienePuerto());
+	int retorno = sendto(s,(char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, sizeof(direccionForanea));
+	
+
+	std :: cout << "direccion IP del paquete a enviar:" << p.obtieneDireccion() << std :: endl;
+	std :: cout << "Puerto del paquete enviado:" << p.obtienePuerto() << std :: endl << std :: endl;
+	
+	return retorno; 
+}
+
+
+
+************************************************************************************************************
+
+header.h
+
+Interfaz para los datos de los paquetes a enviar y la serializacion de datos de transferencia en C++
+
+#ifndef HEADER
+#define HEADER
+#include <inttypes.h>
+/* Definiciones necesarias para los clientes y el servidor de archivos */
+#define MAX_PATH 255 //Longitud máxima en el nombre de un archivo
+#define BUF_SIZE 1000 //Cantidad de bytes que se transfieren por paquete
+/* Definición de las operaciones permitidas */
+#define CREATE 1 //Crea un nuevo archivo
+#define READ 2 //Lee una parte del archivo
+#define WRITE 3 //Escribe una parte del archivo
+#define DELETE 4 //Elimina un archivo existente
+/*Códigos de error */
+#define OK 0 //Operación correcta
+#define E_BAD_OPCODE -1 //Operación desconocida
+#define E_BAD_PARAM -2 //Error en un parámetro
+#define E_IO -3 //Error en disco u otro error de E/S
+/* Formato del mensaje que viaja del cliente hacia el servidor. El tipo de dato numérico
+uint32_t está definido en inttypes.h y es consistente entre computadoras distintas e
+independiente del sistema operativo */
+typedef struct messageCS{
+	uint32_t opcode; //Código de la operación solicitada por el cliente
+	uint32_t count; //Numero de bytes útiles (leídos o por escribir), devuelto por el servidor en READ y enviado por el cliente en WRITE
+	uint32_t offset; //Lugar del archivo donde se debe iniciar la lectura o escritura, enviado por el cliente
+	char name[MAX_PATH]; //Nombre del archivo sobre el cual se opera
+} mensajeCS;
+/* Formato del mensaje que viaja del servidor hacia el cliente */
+typedef struct messageSC{
+	uint32_t count; //Numero de bytes útiles, devuelto por el servidor en READ y enviado por el cliente en WRITE
+	uint32_t result; //Código de error devuelto por el servidor
+	uint32_t offset;
+	char data[BUF_SIZE]; //Datos del archivo
+} mensajeSC; 
+#endif
+
+
+************************************************************************************************************
+
+cliente.cpp
+
+Cliente de transferencia de archivos, el cual consiste en pedir un archivo del servidor con una ventana de 10 paquetes
+
+#include "SocketDatagrama.h"
+#include "header.h"
+#include <fcntl.h>
+#include <stdlib.h>
+#include <vector>
+#include <map>
+
+using namespace std;
+
+const int VENTANA = 10;
+char convert[1000];
+
+
+
+int main(int argc, char * argv[]){
+	SocketDatagrama sock(0);
+	mensajeCS mensaje;
+	mensajeSC res;
+	int destino;
+	mensaje.opcode = READ;
+	mensaje.offset = 0; 	 
+	char ip[16];
+	strcpy(mensaje.name,argv[3]);
+	strcpy(ip,argv[1]);
+	int port = atoi(argv[2]);
+	if((destino = open(argv[3], O_WRONLY|O_TRUNC|O_CREAT,0666)) == -1){
+       perror(argv[3]);
+       exit(-1);
+    }
+    int enviados = 0;
+    for(int i = 0; i < VENTANA; i++){
+    	mensaje.opcode = READ;
+    	mensaje.offset = 1000 * i;
+		strcpy(mensaje.name,argv[3]);
+
+    	PaqueteDatagrama pak((char *)&mensaje,sizeof(mensaje),ip,port);
+		sock.envia(pak);
+    	enviados++;
+    }
+
+    map< int, vector<char> > registro;
+    int nextPack = 0;
+    int nextPackToSend = VENTANA * 1000;
+    int cont = VENTANA;
+
+	PaqueteDatagrama pak1(sizeof(mensajeSC));
+	while(1){
+		sock.setTimeout(0, 100000);
+		int result = sock.recibeTimeout(pak1);
+		if(result < 0){
+			mensaje.opcode = READ;
+	    	mensaje.offset = nextPack;
+			strcpy(mensaje.name,argv[3]);
+
+	    	PaqueteDatagrama pak((char *)&mensaje,sizeof(mensaje),ip,port);
+	    	sock.envia(pak);
+			continue;
+		}
+		cout << result << endl;
+		memcpy(&res,pak1.obtieneDatos(),sizeof(mensajeSC));
+
+		if(res.result != OK)
+			continue;
+		if(res.count == 0)
+			break;
+		vector <char> aux(res.count);
+		for(int i = 0; i < res.count; i++){
+			aux[i] = res.data[i];
+		}
+		registro[res.offset] = aux;
+		cout << "Llego paquete: " << res.offset / 1000 << endl;
+		while(registro.find(nextPack) != registro.end()){
+			
+			copy(registro[nextPack].begin(), registro[nextPack].end(), convert);
+			write(destino,convert,registro[nextPack].size()); 
+			registro.erase(nextPack);
+			nextPack += 1000;
+			enviados--;
+		}
+		while(enviados < VENTANA){
+			mensaje.opcode = READ;
+	    	mensaje.offset = nextPackToSend;
+			strcpy(mensaje.name,argv[3]);
+
+	    	PaqueteDatagrama pak((char *)&mensaje,sizeof(mensaje),ip,port);
+			sock.envia(pak);
+	    	enviados++;
+	    	nextPackToSend += 1000;
+    
+		}
+	}
+	   
+   	close(destino);
+   	return 0;
+}
+
+
+
+************************************************************************************************************

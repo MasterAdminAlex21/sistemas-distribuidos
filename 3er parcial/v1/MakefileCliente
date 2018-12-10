@@ -1,0 +1,55 @@
+PROYECTO=mainCliente
+DESTDIR=/usr/local/bin
+CFLAGS=-Wall
+LDFLAGS=-lm
+CC=gcc
+#objects = muestreo.o procesamiento.o archivos.o
+objects = $(wildcard *.c)
+#el uso de caracteres wildcard; funciones para analizis y sustitucion de cadenas
+all: $(PROYECTO)
+
+
+
+mainCliente.o: mainCliente.cpp
+	g++ mainCliente.cpp -c
+
+PaqueteDatagrama.o: PaqueteDatagrama.cpp
+	g++ PaqueteDatagrama.cpp -c
+
+SocketDatagrama.o: SocketDatagrama.cpp
+	g++ SocketDatagrama.cpp -c
+
+Solicitud.o: Solicitud.cpp
+	g++ Solicitud.cpp -c
+
+#muestreo.o: muestreo.c
+#	$(CC) -c muestreo.c  $(CFLAGS)
+
+#procesamiento.o: procesamiento.c
+#	$(CC) -c procesamiento.c $(CFLAGS)
+
+#archivos.o: archivos.c
+#	$(CC) -c archivos.c $(CFLAGS)
+
+
+$(PROYECTO):  mainCliente.o PaqueteDatagrama.o SocketDatagrama.o Solicitud.o
+	g++ $^ -o $@ $(LDFLAGS)
+	rm *.o
+
+#$^ toma toda la lista de dependencias
+#$@ toma el nombre del objetivo
+
+
+.PHONY: clean
+
+clean:
+	rm -f *.o $(PROYECTO)
+
+install: all
+	if [ ! -d $(DESTDIR) ] ; then \
+		sudo mkdir $(DESTDIR); \
+	fi; \
+	sudo cp $(PROYECTO) $(DESTDIR)
+
+uninstall:
+	sudo rm $(DESTDIR)/$(PROYECTO)

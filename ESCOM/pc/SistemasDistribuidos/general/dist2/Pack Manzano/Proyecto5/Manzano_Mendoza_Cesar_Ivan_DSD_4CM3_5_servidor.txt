@@ -1,0 +1,662 @@
+//******************************************************************************************
+//	PaqueteDatagrama.h
+/*
+	Interfaz de la clase Paquete datagrama	
+*/
+
+#ifndef PAQUETEDATAGRAMA_H_
+#define PAQUETEDATAGRAMA_H_
+#include <stdint.h>
+struct msj {
+	uint32_t secuencia; //Numero de secuencia
+	uint32_t solicitud[2]; //pareja de números enviados por el cliente para su suma
+	uint32_t respuesta; //respuesta enviada por el servidor
+};
+typedef msj mensaje; 
+
+class PaqueteDatagrama {
+public:
+   //cadena (datos), longitud de la cadena, dirección IP_externa, puerto_externo
+   PaqueteDatagrama(char *, unsigned int , char *, int );
+   //mensaje vacío de una longitud determinada para la recepción y puerto de recepcion
+   PaqueteDatagrama(unsigned int);
+   ~PaqueteDatagrama();
+   char * obtieneDireccion();
+   unsigned int obtieneLongitud();
+   int obtienePuerto();
+   char *obtieneDatos();
+   void inicializaPuerto(int);
+   void inicializaIp(char *);
+   void inicializaDatos(char *);
+private:
+   char *datos;
+   char ip[16];   
+   unsigned int longitud;
+   int puerto;  
+};
+
+#endif
+
+//******************************************************************************************
+//	PaqueteDatagrama.cpp
+/*
+	Implementación de la clase Paquete datagrama que encapsula una dirección ip, un puerto, y datos;
+	ya sea para recibirlo o para enviarlo con la clase SocketDatagrama.
+*/
+
+#include <string.h>
+#include "PaqueteDatagrama.h"
+
+using namespace std;
+
+PaqueteDatagrama::PaqueteDatagrama(char *datosE, unsigned int longitudE, char *ipE, int puertoE){
+   longitud = longitudE;
+   datos = new char[longitudE + 1];
+   memcpy(datos, datosE, longitudE);   
+   strcpy(ip, ipE);
+   puerto = puertoE;
+}
+
+PaqueteDatagrama::PaqueteDatagrama(unsigned int longitudE){
+   longitud = longitudE;
+   datos = new char[longitudE + 1];
+   strcpy(datos, "");   
+   strcpy(ip, "");
+}
+
+PaqueteDatagrama::~PaqueteDatagrama(){
+   delete []datos;
+}
+
+char * PaqueteDatagrama::obtieneDireccion(){
+   return ip;
+}
+
+unsigned int PaqueteDatagrama::obtieneLongitud(){
+   return longitud;
+}
+
+int PaqueteDatagrama::obtienePuerto(){
+   return puerto;
+}
+
+char * PaqueteDatagrama::obtieneDatos(){
+   return datos;
+}
+
+void PaqueteDatagrama::inicializaPuerto(int pu){
+   puerto = pu;
+   return;
+}
+
+void PaqueteDatagrama::inicializaIp(char *IP){
+   strcpy(ip, IP);
+   return;
+}
+
+void PaqueteDatagrama::inicializaDatos(char *DATOS){
+   memcpy(datos, DATOS, longitud);
+}
+
+//******************************************************************************************
+//	SocketDatagrama.h
+/*
+	Interfaz de la clase SocketDatagrama
+*/
+
+#ifndef SOCKETDATAGRAMA_H_
+#define SOCKETDATAGRAMA_H_
+
+#include "PaqueteDatagrama.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/time.h>
+#include <errno.h>
+
+class SocketDatagrama{
+public:
+   SocketDatagrama(int); //puerto local no se podrá cambiar para el proceso. Si es cero, lo asigna el sistema operativo
+   ~SocketDatagrama();
+   //Recibe un paquete tipo datagrama proveniente de este socket
+   int recibe(PaqueteDatagrama & p);
+   //Envía un paquete tipo datagrama desde este socket
+   int envia(PaqueteDatagrama & p);
+   void setTimeout(time_t segundos, suseconds_t microsegundos);
+   void unsetTimeout( );
+   int recibeTimeout(PaqueteDatagrama & p); 	
+private:   
+   struct sockaddr_in direccionLocal;
+   struct sockaddr_in direccionForanea;
+   struct timeval tiempoFuera;
+   int s; //ID socket
+   bool timeout;
+};
+
+#endif
+
+//******************************************************************************************
+//	SocketDatagrama.cpp
+/*
+	Implementación de la clase SocketDatagrama que se usa para crear un socket datagrama
+	y para enviar/recibir datagramas utilizando la clase PaqueteDatagrama.
+*/
+
+#include "SocketDatagrama.h"
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <strings.h>
+#include <iostream>
+#include <errno.h>
+#include <stdlib.h>
+
+using namespace std;
+
+SocketDatagrama::SocketDatagrama(int puertoL)
+{
+   s = socket(AF_INET, SOCK_DGRAM, 0);
+   if( s == -1 ){
+      cout << "Error al asociar el socket"<<endl;
+      exit(1);
+   }
+   bzero((char *)&direccionLocal, sizeof(struct sockaddr_in));
+   bzero((char *)&direccionForanea, sizeof(struct sockaddr_in));      
+
+   direccionLocal.sin_family = AF_INET;
+   direccionLocal.sin_addr.s_addr = INADDR_ANY;
+   direccionLocal.sin_port = htons(puertoL);
+   int b = bind(s, (struct sockaddr *)&direccionLocal,sizeof(direccionLocal));
+
+   if( b == -1 ){
+      cout << "Error al asociar el socket"<<endl;
+      exit(1); 
+   }
+}
+
+SocketDatagrama::~SocketDatagrama()
+{
+   close(s);
+}
+
+//Recibe un paquete tipo datagrama proveniente de este socket
+int SocketDatagrama::recibe(PaqueteDatagrama & p)
+{
+   int retorno;
+   socklen_t clilen; //Ojo no compila si es un tipo int en C
+   clilen = sizeof(direccionForanea);
+   retorno = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+   p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+   p.inicializaIp(inet_ntoa(direccionForanea.sin_addr));
+   
+   return retorno;
+}
+
+//Envía un paquete tipo datagrama desde este socket
+int SocketDatagrama::envia(PaqueteDatagrama & p)
+{
+   direccionForanea.sin_family = AF_INET;
+   direccionForanea.sin_addr.s_addr = inet_addr(p.obtieneDireccion());
+   direccionForanea.sin_port = htons(p.obtienePuerto());
+   sendto(s, (char *)p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *) &direccionForanea, sizeof(direccionForanea));
+  
+
+}
+void SocketDatagrama::setTimeout(time_t segundos, suseconds_t microsegundos){
+	timeout = true;	
+	tiempoFuera.tv_sec = segundos;
+	tiempoFuera.tv_usec = microsegundos;
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tiempoFuera, sizeof(tiempoFuera));	
+}
+void SocketDatagrama::unsetTimeout(){
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, NULL, 0);
+	timeout = false;
+}
+
+int SocketDatagrama::recibeTimeout(PaqueteDatagrama & p)
+{
+   int retorno;
+   struct timeval tiempo1;
+   struct timeval tiempo2;
+   struct timeval res;
+		
+   socklen_t clilen; //Ojo no compila si es un tipo int en C
+   clilen = sizeof(direccionForanea);
+   gettimeofday(&tiempo1, NULL);
+   retorno = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+   if(retorno < 0){
+	if (errno == EWOULDBLOCK)
+	{
+		fprintf(stderr, "Tiempo para recepción transcurrido\n");	
+	}	
+	else
+	fprintf(stderr, "Error en recvfrom\n");
+    }
+    else{
+		gettimeofday(&tiempo2, NULL);
+		timersub(&tiempo2,&tiempo1,&res);
+		cout << res.tv_sec << " " << res.tv_usec << endl;		
+	}	
+   p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+   p.inicializaIp(inet_ntoa(direccionForanea.sin_addr));
+   
+   return retorno;
+}
+
+//******************************************************************************************
+//	Archivo.h
+/*
+	Interfaz de la clase Archivo	
+*/
+
+#ifndef ARCHIVO_H_
+#define ARCHIVO_H_
+#include <cstring>
+#include <string>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <iostream>
+using namespace std;
+
+class Archivo
+{
+public:
+	Archivo(const char *filename, int banderas);
+	Archivo(const char *filename, int banderas, mode_t modo);
+	~Archivo();
+	size_t lee(size_t nbytes);
+	size_t escribe(const void *buffer, size_t nbytes);
+	char *get_contenido();
+	void cerrar();
+protected:
+	string nombreArchivo; //Almacena el nombre del archivo
+	int fd; //Almacena el descriptor de archivo
+	char *contenido; //Almacena temporalmente contenido parcial o total del archivo
+};
+#endif
+
+//******************************************************************************************
+//	Archivo.cpp
+/*
+	Implementación de la clase archivo que permite abrir o crear un archivo con las banderas
+	y permisos que se indiquen, al igual que leer los datos que contienen o escribir en ellos.
+*/
+
+#include "Archivo.h"
+using namespace std;
+
+Archivo::Archivo(const char *filename, int banderas){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas)) == -1){
+		perror(filename);
+		exit(-1);
+   	}
+}
+Archivo::Archivo(const char *filename, int banderas, mode_t modo){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas, modo)) == -1){
+		perror(filename);
+		exit(-1);
+	}
+}
+
+Archivo::~Archivo(){
+}
+
+size_t Archivo::lee(size_t nbytes){
+	contenido = new char[nbytes+5];
+	return read(fd, contenido, nbytes);
+}
+
+size_t Archivo::escribe(const void *buffer, size_t nbytes){
+	return write(fd, buffer, nbytes);
+}
+char *Archivo::get_contenido(){
+	return contenido;
+}
+void Archivo::cerrar(){
+	close(fd);
+}
+
+//******************************************************************************************
+//	Generador.h
+/*
+	Interfaz de la clase Generador	
+*/
+
+#ifndef GENERADOR_H_
+#define GENERADOR_H_
+#include "Archivo.h"
+#include "Header.h"
+#include <set>
+#include <iostream>
+#define PORCENTAJE 10 //porcentaje de fraude
+using namespace std;
+
+class Generador
+{
+public:
+	Generador( int n_, int opc_ );
+	void genera();
+private:
+	int n, opc, fraude, j;
+	Archivo *arc;
+	registro reg;
+	string partidos[11];
+	set <string> curp, telefono;
+	string generaTel();
+	string generaCurp();
+};
+#endif
+
+//******************************************************************************************
+//	Generador.cpp
+/*
+	Implementación de la clase generador a la que se le pasa como parámetro el número de servidor
+	para el que generará registros. Crea el archivo en el que se guardarán los registros y con
+	el método "genera" agrega un registro al archivo.
+*/
+
+#include "Generador.h"
+
+Generador::Generador( int n_, int opc_ ){
+	j = 1;
+	n = n_;
+	opc = opc_;
+	srand(getpid());
+
+	partidos[0] = "PRI";
+	partidos[1] = "PAN";
+	partidos[2] = "PRD";
+	partidos[3] = "P_T";
+	partidos[4] = "VDE";
+	partidos[5] = "MVC";
+	partidos[6] = "NVA";
+	partidos[7] = "MOR";
+	partidos[8] = "HUM";
+	partidos[9] = "ENC";
+
+	string nombre = "";
+	nombre += (char)(n + 48);
+	nombre += ".txt";
+	arc = new Archivo( nombre.c_str(), O_WRONLY|O_TRUNC|O_CREAT, 0666 );
+
+	fraude = (int)((double)n / ( (double)(n * PORCENTAJE) / 100.0 ));
+
+	reg.celular = generaTel();
+	reg.CURP = generaCurp();
+	reg.partido = partidos[ rand()%10 ];
+
+	//printf("Tamaño de registro = %lu\n", sizeof(registro));
+}
+
+void Generador::genera(){
+	switch(opc){
+		case 1: //Opcion 1
+			reg.celular = generaTel();
+			reg.CURP = generaCurp();
+			reg.partido = partidos[ rand()%10 ];
+			arc->escribe( (char *) &reg, sizeof(registro) );
+		break;
+		case 2: //Opcion 2 fraude con telefono, mismo telefono, distinta CURP en 10% de los casos
+			if( j % fraude != 0)
+				reg.celular = generaTel();
+			reg.CURP = generaCurp();
+			reg.partido = partidos[ rand()%10 ];
+			arc->escribe( (char *) &reg, sizeof(registro) );
+		break;
+		case 3: //Opcion 3 fraude con CURP, distinto telefono, misma CURP en 10% de los casos
+			for(int j = 0; j < n; j++){
+				reg.celular = generaTel();
+				if( j % fraude != 0)
+					reg.CURP = generaCurp();
+				reg.partido = partidos[ rand()%10 ];
+				arc->escribe( (char *) &reg, sizeof(registro) );
+			}
+		break;
+		default:
+			printf("Opción incorrecta\n");
+			exit(0);
+	}
+	cout << reg.celular << " " << reg.CURP << " " << reg.partido << endl;
+}
+
+string Generador::generaTel(){
+	string tel;
+	do{
+		tel = "";
+		for( int i = 0; i < 9; i++ ){
+			tel += (char) (rand()%10 + 48);
+		}
+		tel += (char)(n + 48);
+	}
+	while( telefono.count( tel ) != 0 );
+	telefono.insert( tel );
+	return tel;
+}
+
+string Generador::generaCurp(){
+	string cur;
+	do{
+		cur = "";
+		for( int i = 0; i < 4; i++ ){
+			cur += (char) (rand()%26 + 65);
+		}
+		for( int i = 0; i < 6; i++ ){
+			cur += (char) (rand()%10 + 48);
+		}
+		for( int i = 0; i < 6; i++ ){
+			cur += (char) (rand()%26 + 65);
+		}
+		cur += (char) (rand()%10 + 48);
+		cur += (char) (n + 48);
+	}
+	while( curp.count( cur ) != 0 );
+	curp.insert( cur );
+	return cur;
+}
+
+//******************************************************************************************
+//	Header.h
+/*
+	Definición de estructuras usadas para el manejo y transmisión de mensajes entre el cliente
+	y los servidores.
+*/
+
+#ifndef HEADER_H_
+#define HEADER_H_
+
+struct registro{
+	string celular;
+	string CURP;
+	string partido;
+};
+
+struct peticion{
+	int tipo;
+	string buscar;
+};
+
+struct voto{
+	string partido;
+	int num;
+};
+
+struct respuesta{
+	int tipo;
+	voto v[10];
+	string partido;
+};
+
+#endif
+
+//******************************************************************************************
+//	Servidor.h
+/*
+	Interfaz de la clase Servidor	
+*/
+
+#ifndef SERVIDOR_H_
+#define SERVIDOR_H_
+#include "SocketDatagrama.h"
+#include "PaqueteDatagrama.h"
+#include "Archivo.h"
+#include "Generador.h"
+#include "Header.h"
+#include <cstdio>
+#include <map>
+#include <unistd.h>
+#include <iostream>
+using namespace std;
+
+class Servidor{
+public:
+	Servidor( int n_, int porc_, int opc_ );
+private:
+	int n, porc, opc;
+	void busca( respuesta *res, string buscar );
+	void cuentaVotos( respuesta *res );
+};
+#endif
+
+//******************************************************************************************
+//	Servidor.cpp
+/*
+	Implementación de la clase Servidor a la cual se le pasa como parámetro el número de servidor
+	que representará, el porcentaje de velocidad a la que se generarán los registros y la opción
+	para el fraude. Se crea un proceso que cada cierto tiempo generará el siguiente registro.
+	El proceso padre mientras tanto espera peticiones. Ante la llegada de una petición abre el
+	archivo que le corresponde y pasa cada registro que hay y cuenta los votos según el tipo de
+	petición.
+*/
+
+#include "Servidor.h"
+
+Servidor::Servidor( int n_, int porc_, int opc_ ) : n(n_), porc( porc_ ), opc(opc_){
+	Generador gen( n, opc );
+	int port = 7200+n;
+	double tiempoBase = double(125000 * 100) / (double)porc;
+
+	if( tiempoBase > 0 && fork() == 0 ){
+		while(1){
+			sleep( (int)(tiempoBase / 1000000.0) );
+			usleep( (int)tiempoBase % 1000000 );
+			gen.genera();
+		}
+	}
+
+	PaqueteDatagrama *paquete = new PaqueteDatagrama( sizeof( peticion ) );
+	SocketDatagrama *socket = new SocketDatagrama( port );
+
+	peticion pet;
+	respuesta *res;
+
+	while( 1 ){
+		res = new respuesta;
+		paquete = new PaqueteDatagrama( sizeof( peticion ) );
+		int tam = socket->recibe( *paquete );
+		memcpy( &pet, paquete->obtieneDatos(), tam );
+
+		res->tipo = pet.tipo;
+		if( pet.tipo == 1 ){
+			cuentaVotos( res );
+		}
+		else{
+			busca( res, pet.buscar );
+		}
+		cout << "Servidor " << n << " respondió petición"<<endl;
+
+		paquete = new PaqueteDatagrama( (char *) res , sizeof(respuesta), paquete->obtieneDireccion(), paquete->obtienePuerto() );
+		int env = socket->envia( *paquete );
+	}
+}
+
+void Servidor::cuentaVotos( respuesta *res ){
+	int lee;
+	voto v;
+	registro aux;
+	char nombre[100];
+	map< string, int > mapa;
+	sprintf ( nombre, "%d.txt", n );
+	Archivo temp( nombre, O_RDONLY );
+	
+	while( (lee = temp.lee( sizeof( registro ) )) ){
+		memcpy( &aux, temp.get_contenido(), lee );
+		mapa[ aux.partido ]++;
+	}
+	temp.cerrar();
+
+	int i = 0;
+	for( map< string, int >::iterator it = mapa.begin(); it != mapa.end(); it++  ){
+		v.partido = it->first;
+		v.num = it->second;
+		res->v[i++] = v;
+	}
+}
+
+void Servidor::busca( respuesta *res, string buscar ){
+	int lee;
+	registro aux;
+	char nombre[100];
+	sprintf ( nombre, "%d.txt", n );
+	Archivo temp( nombre, O_RDONLY );
+	
+	while( (lee = temp.lee( sizeof( registro ) )) ){
+		memcpy( &aux, temp.get_contenido(), lee );
+		if( aux.CURP == buscar || aux.celular == buscar ){
+			res->partido = aux.partido;
+			break;
+		}
+	}
+	temp.cerrar();
+}
+
+//******************************************************************************************
+//	multiples.cpp
+/*
+	Main del servidor. Ejecuta 8 servidores en procesos diferentes, a los cuales se les envía
+	el parámetro que se recibe que es la velocidad a la que se generarán los registros en cada
+	uno de los servidores y el número de servidor que representará.
+*/
+
+#include "Servidor.h"
+#include <unistd.h>
+using namespace std;
+
+int main( int argc, char* argv[] ){
+	if( argc != 2 ){
+		printf("Forma de uso: programa porcentaje \n");
+		exit(0);
+	}
+
+	for( int i = 0; i < 8; i++ ){
+		if( fork() == 0 )
+			Servidor serv( i , atoi( argv[1] ), 1 );	
+	}
+	for( int i = 0; i < 8; i++ ){
+		wait(0);
+	}
+}
+
+//******************************************************************************************
+//	Makefile
+/*
+	Archivo para compilar el servidor
+*/
+all: servidor
+servidor: Servidor.o multiples.cpp Header.h
+	g++ multiples.cpp Servidor.o Archivo.o Generador.o SocketDatagrama.o PaqueteDatagrama.o -o servidor
+Servidor.o: Generador.o SocketDatagrama.o Servidor.h Servidor.cpp
+	g++ Servidor.cpp -c
+Generador.o: Generador.h Generador.cpp Archivo.o
+	g++ Generador.cpp -c
+Archivo.o: Archivo.h Archivo.cpp
+	g++ Archivo.cpp -c
+SocketDatagrama.o: SocketDatagrama.h SocketDatagrama.cpp PaqueteDatagrama.o
+	g++ SocketDatagrama.cpp -c
+PaqueteDatagrama.o: PaqueteDatagrama.h PaqueteDatagrama.cpp
+	g++ PaqueteDatagrama.cpp -c
+

@@ -1,0 +1,22 @@
+#include <allegro.h>
+
+int main() 
+{
+   allegro_init();
+   install_keyboard();
+   set_color_depth(16);
+   set_gfx_mode(GFX_AUTODETECT_WINDOWED, 640, 480, 0, 0);
+
+   clear_to_color(screen, makecol(128, 128, 128));
+	int x=0,y=0;	
+  
+	for(y=0;y<480;y+50){
+	for(x=0;x<640;x++){
+	circle(screen, x, y, rand()%50, makecol(rand() % 256,rand() % 256 , rand() % 256));	
+	}
+}
+
+   
+
+   return 0;
+}

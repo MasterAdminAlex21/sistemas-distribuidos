@@ -1,0 +1,333 @@
+//******************************************************************************************
+//	PaqueteDatagrama.h
+/*
+	Interfaz de la clase Paquete datagrama	
+*/
+#ifndef PAQUETEDATAGRAMA_H_
+#define PAQUETEDATAGRAMA_H_
+#include <string>
+#include <cstring>
+using namespace std;
+class PaqueteDatagrama {
+public:
+	PaqueteDatagrama(char *, unsigned int, string , int );
+	PaqueteDatagrama(unsigned int );
+	~PaqueteDatagrama();
+	string obtieneDireccion();
+	unsigned int obtieneLongitud();
+	int obtienePuerto();
+	char *obtieneDatos();
+	void inicializaPuerto(int);
+	void inicializaIp( string );
+	void inicializaDatos(char *);
+private:
+	char *datos; //Almacena los datos
+	string ip; //Almacena la IP
+	unsigned int longitud; //Almacena la longitud de la cadena de datos
+	int puerto; //Almacena el puerto
+}; 
+#endif
+
+//******************************************************************************************
+//	PaqueteDatagrama.cpp
+/*
+	Implementación de la clase Paquete datagrama que encapsula una dirección ip, un puerto, y datos;
+	ya sea para recibirlo o para enviarlo con la clase SocketDatagrama.
+*/
+
+#include "PaqueteDatagrama.h"
+#include <string>
+#include <iostream>
+using namespace std;
+
+PaqueteDatagrama::PaqueteDatagrama( char * datos_, unsigned int longitud_, string ip_ , int puerto_ ){
+	longitud = longitud_;
+	datos = new char[ longitud ];
+	memcpy( datos, datos_, longitud );
+	ip = ip_;
+	puerto = puerto_;
+}
+
+PaqueteDatagrama::PaqueteDatagrama(unsigned int longitud_){
+	longitud = longitud_;
+	datos = new char[longitud_];
+}
+
+PaqueteDatagrama::~PaqueteDatagrama(){
+	delete datos;
+}
+
+string PaqueteDatagrama::obtieneDireccion(){
+	return ip;
+}
+
+unsigned int PaqueteDatagrama::obtieneLongitud(){
+	return longitud;
+}
+
+int PaqueteDatagrama::obtienePuerto(){
+	return puerto;
+}
+
+char* PaqueteDatagrama::obtieneDatos(){
+	return datos;
+}
+
+void PaqueteDatagrama::inicializaPuerto(int puerto_){
+	puerto = puerto_;
+}
+
+void PaqueteDatagrama::inicializaIp(string ip_){
+	ip = ip_;
+}
+void PaqueteDatagrama::inicializaDatos(char * datos_){
+	datos = new char[ strlen(datos_) + 1 ];
+	memcpy( datos, datos_, strlen( datos_ )+1 );
+}
+
+//******************************************************************************************
+//	SocketDatagrama.h
+/*
+	Interfaz de la clase SocketDatagrama
+*/
+
+#ifndef SOCKETDATAGRAMA_H_
+#define SOCKETDATAGRAMA_H_
+#include "PaqueteDatagrama.h"
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <strings.h>
+#include <cmath>
+#include <iostream>
+#include <arpa/inet.h>
+#include <time.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <cerrno>
+#include <cstring>
+
+class SocketDatagrama{
+public:
+ SocketDatagrama(int);
+ ~SocketDatagrama();
+ //Recibe un paquete tipo datagrama proveniente de este socket
+ int recibe(PaqueteDatagrama & p);
+ //Envía un paquete tipo datagrama desde este socket
+ int envia(PaqueteDatagrama & p);
+private:
+ struct sockaddr_in direccionLocal;
+ struct sockaddr_in direccionForanea;
+ int s; //ID socket
+ static int puerto; //Puerto
+
+};
+
+#endif
+
+//******************************************************************************************
+//	SocketDatagrama.cpp
+/*
+	Implementación de la clase SocketDatagrama que se usa para crear un socket datagrama
+	y para enviar/recibir datagramas utilizando la clase PaqueteDatagrama.
+*/
+
+#include "SocketDatagrama.h"
+#include "PaqueteDatagrama.h"
+#include <iostream>
+using namespace std;
+
+ 
+SocketDatagrama:: SocketDatagrama(int p){ 
+   s = socket(AF_INET, SOCK_DGRAM, 0);
+   /* rellena la direcciòn del cliente*/
+   bzero((char *)&direccionLocal, sizeof(direccionLocal));
+   direccionLocal.sin_family = AF_INET;
+   direccionLocal.sin_addr.s_addr = INADDR_ANY;
+   
+   /*cuando se utiliza por numero de puerto el 0, el sistema se encarga de asignarle uno */
+   direccionLocal.sin_port = htons(p);
+   int b = bind(s, (struct sockaddr *)&direccionLocal,sizeof(direccionLocal));
+}
+
+int  SocketDatagrama::recibe(PaqueteDatagrama &p){
+   socklen_t len = sizeof( direccionForanea );
+   int ret = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr*)&direccionForanea,&len);
+
+   char auxIP[INET_ADDRSTRLEN];
+   inet_ntop(AF_INET, &(direccionForanea.sin_addr), auxIP, INET_ADDRSTRLEN);
+   p.inicializaIp( auxIP );
+   p.inicializaPuerto( direccionForanea.sin_port );
+
+   return ret;
+}
+ 
+int SocketDatagrama::envia(PaqueteDatagrama &p){
+   bzero((char *)&direccionForanea, sizeof(direccionForanea));
+   direccionForanea.sin_family = AF_INET;
+   direccionForanea.sin_addr.s_addr = inet_addr(p.obtieneDireccion().c_str());
+   direccionForanea.sin_port = htons(p.obtienePuerto());
+
+   return sendto(s, (char *)p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *) &direccionForanea, sizeof(direccionForanea));
+ }
+
+//******************************************************************************************
+//	Archivo.h
+/*
+	Interfaz de la clase Archivo	
+*/
+
+#ifndef ARCHIVO_H_
+#define ARCHIVO_H_
+#include <cstring>
+#include <string>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+using namespace std;
+
+class Archivo
+{
+public:
+	Archivo(const char *filename, int banderas);
+	Archivo(const char *filename, int banderas, mode_t modo);
+	~Archivo();
+	size_t lee(size_t nbytes);
+	size_t escribe(const void *buffer, size_t nbytes);
+	char *get_contenido();
+	void cerrar();
+protected:
+	string nombreArchivo; //Almacena el nombre del archivo
+	int fd; //Almacena el descriptor de archivo
+	char *contenido; //Almacena temporalmente contenido parcial o total del archivo
+};
+#endif
+
+//******************************************************************************************
+//	Archivo.cpp
+/*
+	Implementación de la clase archivo que permite abrir o crear un archivo con las banderas
+	y permisos que se indiquen, al igual que leer los datos que contienen o escribir en ellos.
+*/
+
+#include "Archivo.h"
+using namespace std;
+
+Archivo::Archivo(const char *filename, int banderas){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas)) == -1){
+		perror(filename);
+		exit(-1);
+   	}
+}
+Archivo::Archivo(const char *filename, int banderas, mode_t modo){
+	if((fd = open(filename, banderas, modo)) == -1){
+		perror(filename);
+		exit(-1);
+	}
+}
+
+Archivo::~Archivo(){
+}
+
+size_t Archivo::lee(size_t nbytes){
+	contenido = (char*)realloc(contenido, nbytes);
+	return read(fd, contenido, nbytes);
+}
+
+size_t Archivo::escribe(const void *buffer, size_t nbytes){
+	return write(fd, buffer, nbytes);
+}
+char *Archivo::get_contenido(){
+	return contenido;
+}
+void Archivo::cerrar(){
+	close(fd);
+}
+
+//******************************************************************************************
+//	servidor.cpp
+/*
+	Principal. Ésta clase crea un socket y espera a recibir el primer dato que es el número
+	de archivos a crear. Una vez que lo recibe crea un vector de archivos, creando cada uno
+	con su nombre correspondiente y en modo de escritura.
+	Posteriormente comienza a escuchar las secciones de 100 bytes y cada vez que recibe una
+	de ellas, la segementa por palabras con el uso de flujos de cadenas e inserta cada cadena
+	en un vector de cadenas.
+	Finalmente se escoge de manera aleatoria una posición del arreglo de cadenas, se escribe
+	en el archivo correspondiente y se cierra el archivo.
+*/
+
+#include "SocketDatagrama.h"
+#include "PaqueteDatagrama.h"
+#include "Archivo.h"
+#include <iostream>
+#include <vector>
+#include <stdio.h>
+#include <sstream>
+#include <cmath>
+#define pb push_back
+using namespace std;
+
+int puerto = 8000;
+
+int main(){
+	srand( time(NULL) );
+	int N = 0;
+	string aux, s;
+	char nombre[100];
+	vector< Archivo > arc;
+	vector< string > palabras;
+
+	PaqueteDatagrama *paquete = new PaqueteDatagrama( sizeof(int) + 3 );
+	SocketDatagrama *socket = new SocketDatagrama( puerto );
+	
+	int tam = socket->recibe( *paquete );
+	memcpy( &N, paquete->obtieneDatos(), tam );
+
+	for( int i = 0; i < N; i++ ){
+		sprintf ( nombre, "%d.txt", i+1 );
+		Archivo temp = Archivo( nombre, O_WRONLY|O_TRUNC|O_CREAT, 0666 );
+		arc.pb( temp );
+	}
+
+	for( int i = 0; i < N; i++ ){
+		paquete = new PaqueteDatagrama( 100 );
+		tam = socket->recibe( *paquete );
+	 	aux = paquete->obtieneDatos();
+		
+		palabras.clear();
+		stringstream ss( aux );
+		while (ss >> s) {
+		    palabras.pb( s );
+		}
+		ss.clear();
+
+		s = "";
+		if( palabras.size() > 0 ){
+			s = palabras[ rand()%palabras.size() ];
+		}
+		arc[i].escribe( s.c_str(), s.size() );
+		arc[i].cerrar();
+	}
+}
+
+//******************************************************************************************
+//	Makefile
+/*
+	Archivo para compilar el servidor
+*/
+
+all: servidor
+servidor: SocketDatagrama.o servidor.cpp Archivo.o
+	g++ servidor.cpp SocketDatagrama.o PaqueteDatagrama.o Archivo.o -o servidor
+Archivo.o: Archivo.cpp Archivo.h
+	g++ Archivo.cpp -c
+SocketDatagrama.o: SocketDatagrama.cpp SocketDatagrama.h PaqueteDatagrama.o
+	g++ SocketDatagrama.cpp -c
+PaqueteDatagrama.o: PaqueteDatagrama.cpp PaqueteDatagrama.h
+	g++ PaqueteDatagrama.cpp -c

@@ -1,0 +1,5 @@
+server:  server.o gfxModified.o PaqueteDatagrama.o SocketDatagrama.o
+	g++ -std=c++11 server.o gfxModified.o PaqueteDatagrama.o SocketDatagrama.o -o server -lX11
+server.o: server.cpp gfxModified.o PaqueteDatagrama.o SocketDatagrama.o
+	g++ -std=c++11 server.cpp PaqueteDatagrama.o SocketDatagrama.o -c
+

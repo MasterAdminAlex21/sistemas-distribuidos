@@ -1,0 +1,266 @@
+*************************************************************************************
+//Makefile
+
+default: MessageCS.class MessageSC.class ServidorArchivos.class
+
+MessageCS.class: MessageCS.java
+	javac MessageCS.java
+MessageSC.class: MessageSC.java
+	javac MessageSC.java
+ServidorArchivos.class: ServidorArchivos.java
+	javac ServidorArchivos.java
+clean: 
+	rm *.class
+
+*************************************************************************************
+//MessageCS.java
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+
+public class MessageCS {
+
+    private  int opcode;    
+    private  int count;
+    private  int offset;
+    private  String name;
+    private final int BUF_SIZE = 1000;
+    
+    public MessageCS(int opcoud, int caunt, int ofset, String neim){
+        this.opcode = opcoud;
+        this.count = caunt;
+        this.offset = ofset;
+        this.name = neim;
+    }
+/*  
+    public byte[] getByteRepr() {
+        ByteBuffer bb = ByteBuffer.allocate(4 * Integer.BYTES + BUF_SIZE);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(this.opcode);
+        bb.putInt(this.count);
+        bb.putInt(this.offset);
+        bb.put(name);
+        return bb.array();
+    }*/
+
+    public byte[] getByteRepr() {
+        ByteBuffer bb = ByteBuffer.allocate(4 * Integer.BYTES + 255);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(this.opcode);
+        bb.putInt(this.count); 
+        bb.putInt(this.offset);                               
+        for (int i = 0; i < this.name.length(); i++)
+          bb.put((byte) this.name.charAt(i));
+        return bb.array();
+    }
+
+    public int getOpcode() { 
+        return opcode; 
+    }
+
+    public int getCount() { 
+        return count; 
+    }
+    
+    public int getOffset() { 
+        return offset; 
+    }
+
+    public String getName() { 
+        return name; 
+    }
+    
+    public void setOpcode(int opcoud) { 
+        opcode = opcoud;
+    }
+
+    public void setCount(int caunt) { 
+        count = caunt; 
+    }    
+
+    public void setOffset(int ofset) {
+        offset = ofset; 
+    }
+
+    public void setName(String neim) { 
+        name = neim;
+    }
+
+}
+
+
+*************************************************************************************
+//MessageSC.java
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+public class MessageSC {
+    
+    private int count;   
+    private int result;    
+    private String data; 
+    private  int offset;   
+    
+
+    public MessageSC(int count, int result, String data, int offset){
+        this.count = count;
+        this.result =  result;
+        this.data = data;   
+        this.offset = offset;     
+    }
+    
+    public static MessageSC getClassFromBytes(byte[] buf) {
+        ByteBuffer bb = ByteBuffer.wrap(buf);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        int opcoud = bb.getInt();
+        int caunt = bb.getInt();
+        int ofset = bb.getInt();
+        StringBuilder sb = new StringBuilder();
+        
+        byte nameByte;
+        while ( (nameByte = bb.get()) != '\0' )
+            sb.append((char) nameByte);
+        
+        MessageSC mensaje = new MessageSC(opcoud, caunt, sb.toString(), ofset);
+
+        return mensaje;
+    }
+/*
+    public byte[] getByteRepr() {
+        ByteBuffer bb = ByteBuffer.allocate(4 * Integer.BYTES + 255);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(this.count);
+        bb.putInt(this.result); 
+        bb.putInt(this.offset);                               
+        for (int i = 0; i < this.data.length(); i++)
+          bb.put((byte) this.data.charAt(i));
+        return bb.array();
+    }
+/*
+    public byte[] getByteRepr() {
+        ByteBuffer bb = ByteBuffer.allocate(3 * Integer.BYTES + 255);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        bb.putInt(opcode);
+        bb.putInt(count);
+        bb.putInt(offset);
+        for (int i = 0; i < name.length(); i++)
+          bb.put((byte) name.charAt(i));
+        return bb.array();
+    }
+  */  
+    public int getCount() { 
+        return count;
+    }
+
+    public int getResult() { 
+        return result; 
+    }
+
+    public String getData() { 
+        return data; 
+    }
+
+    public int getOffset() { 
+        return offset; 
+    }
+
+    public void setCount(int caunt) { 
+        count = caunt;
+    }
+
+    public void setResult(int res) { 
+        result = res;
+    }
+
+    public void setData(String dat) { 
+        data = dat;
+    }
+
+    public void setOffset(int ofset) { 
+        offset = ofset;
+    }
+
+}
+
+
+*************************************************************************************
+//ServidorArchivos.java
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.net.*;
+import java.nio.ByteBuffer;
+
+public class ServidorArchivos {
+    static final int CREATE = 1; 
+    static final int READ = 2;   
+    static final int WRITE = 3;  
+    static final int DELETE = 4; 
+
+    //static final int PUERTO = 7000;
+    static final int TAM_PAQUETE = 1000;
+
+    static final int OK = 1;              
+    
+    public static void main(String[] args) throws UnknownHostException{
+    	if(args.length == 0){
+        	System.out.println("Correr primero el cleinte\nModo de uso: java ServidorArchivos PuertoCliente");
+        	System.exit(0);
+    	}
+        String palabra = args[0];
+        int puertoC = Integer.parseInt(args[1]);
+        try {
+            System.out.println("Servidor corriendo :)");
+            DatagramSocket s = new DatagramSocket(puertoC);
+
+            DatagramPacket l = new DatagramPacket(new byte[TAM_PAQUETE], TAM_PAQUETE);
+            s.receive(l);
+            MessageSC a = MessageSC.getClassFromBytes(l.getData());
+            InetAddress ip = l.getAddress();
+            int puerto = l.getPort();
+
+
+            
+            //byte b[] = new byte[50];
+            byte buf[] = palabra.getBytes();
+            MessageCS m = new MessageCS(2, 1, 1, palabra);
+            //m.setName(palabra);
+            
+            DatagramPacket p2 = new DatagramPacket(m.getByteRepr(), m.getByteRepr().length, ip, puerto);
+            s.send(p2);
+            System.out.println("se envio palabra: "+palabra+"\n\nSe recibio:");
+            while(true){
+                //recibimos datos
+                DatagramPacket p = new DatagramPacket(new byte[TAM_PAQUETE], TAM_PAQUETE);
+                s.receive(p);
+                
+                MessageSC c = MessageSC.getClassFromBytes(p.getData());
+                int cout = c.getCount();
+                int res = c.getResult();
+                int offset = c.getOffset();
+                //byte b[] = new byte[c.getCount()];
+                String info = c.getData();
+
+                System.out.println(info + " ");
+            }
+
+        } catch (SocketException ex) { 
+            Logger.getLogger(ServidorArchivos.class.getName()).log(Level.SEVERE, null, ex); } catch (IOException ex) {
+            Logger.getLogger(ServidorArchivos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }    
+}
+
+

@@ -1,0 +1,29 @@
+¿que entidad controla los objetos distribuidos?
+A. servidor
+B. cliente
+C. procesos
+D. RMI
+
+¿que lenguaje no soporta los colectores de basura?
+A. c++
+B. java
+C. python
+D. c#
+
+¿como se define RMI?
+A. invocacion de metodos entre diferentes procesos
+B. invocacion de metodos entre computadoras
+C. invocacion de metodos en arquitectura cliente-servidor
+D. acceso a los valores de un objeto
+
+son los conceptos fundamentales del modelo de objetos distribuido
+A. referencias de objetos remotos e interfaces remotas
+B. metodos remotos y variables remotas
+C. acciones remotas y referencias de objetos remotos
+D. referencias de objetos remotos y manejo de excepciones remotas
+
+¿para que son usadas las IDL?
+A. definir interfaces remotas
+B. invocar metodos remotos
+C. adaptar los lenguajes de programacion entre el cliente y el servidor
+D. referenciar idealmente objetos remotos

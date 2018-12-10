@@ -1,0 +1,648 @@
+//ejercicio 8 pag 451
+#include <iostream>
+#include <iomanip>
+using namespace std;
+// class declaration section
+class Date
+{
+  private:
+    int month;
+    int day;
+    int year;
+  public:
+    Date(int = 7, int = 4, int = 2012); // constructor
+    void setDate(int, int, int);   // member method to copy a date
+    void showDate();               // member method to display a date
+    void dayOfWeek();      //here is the new method 
+};
+// class implementation section
+Date::Date(int mm, int dd, int yyyy)
+{
+  month = mm;
+  day = dd;
+  year = yyyy;
+}
+void Date::setDate(int mm, int dd, int yyyy)
+{
+  month = mm;
+  day = dd;
+  year = yyyy;
+  return;
+}
+void Date::showDate()
+{
+    cout << "The date is ";
+    cout << setfill('0')
+         << setw(2) << month << "/"
+         << setw(2) << day << "/"
+         << setw(2) << year % 100; // extract the last 2 year digits
+    cout << endl;
+  return;
+}
+void Date::dayOfWeek()
+{
+ if(month<3){
+  month+=12;
+  year-=1;
+ }
+ int century=year/100;
+ int yearAux=year/100;
+ int t=day+int(26*((month+1)/10)) + yearAux+ int(year/4)+int(century/4)-2*century;
+ int dayOW=t%7;
+ if(dayOW<0)
+  dayOW+=7;
+ switch(dayOW){
+  case 0:
+  cout<<"the day of the week: Saturday"<<endl;
+  break;
+  case 1:
+  cout<<"the day of the week: Sunday"<<endl;
+  break;
+  case 2:
+  cout<<"the day of the week: Monday"<<endl;
+  break;
+  case 3:
+  cout<<"the day of the week: Tuesday"<<endl;
+  break;
+  case 4:
+  cout<<"the day of the week: Wednesday"<<endl;
+  break;
+  case 5:
+  cout<<"the day of the week: Thursday"<<endl;
+  break;
+  case 6:
+  cout<<"the day of the week: Friday"<<endl;
+  break;
+ }
+}
+int main()
+{
+  Date a, b, c(4,1,2000);  // declare 3 objects
+  b.setDate(12,25,2009);  // assign values to b"s data members
+  a.showDate();           // display object a"s values
+  b.showDate();           // display object b"s values
+  c.showDate();           // display object c"s values
+  a.dayOfWeek();
+  b.dayOfWeek();
+  c.dayOfWeek();
+  return 0;
+}
+*********************************************************************
+//ejercicio 3 pag 462
+#include <iostream>
+#include <iomanip>
+using namespace std;
+// class declaration section
+class Date
+{
+  private:
+    long yyyymmdd;
+  public:
+    Date(int = 7, int = 4, int = 2012);   // constructor
+    Date(long);           // another constructor
+    void showDate();      // member method to display a date
+};
+// class implementation section
+Date::Date(int mm, int dd, int yyyy)
+{
+  yyyymmdd = (yyyy * 10000) + (mm * 100) + dd;
+}
+Date::Date(long yyyymmdd):yyyymmdd(yyyymmdd)
+{
+}
+void Date::showDate()
+{
+  cout <<"The date is ";
+  cout << setfill('0')
+       << setw(2) << (yyyymmdd%10000)/100 << '/'
+       << setw(2) << (yyyymmdd%10000)%100 << '/'
+       << setw(2) << (yyyymmdd/10000)%100; // extract the last 2 year digits
+  cout << endl;
+  return;
+}
+int main()
+{
+  Date a, b(4,1,1998), c(20090515L); // declare three objects
+  a.showDate();           // display object a's values
+  b.showDate();           // display object b's values
+  c.showDate();           // display object c's values
+  return 0;
+}
+*********************************************************************
+//ejercicio 6 pag 472
+#include <iostream>
+#include<time.h>
+using namespace std;
+// class declaration section
+class Elevator
+{
+  private:
+    int elNum;
+    int currentFloor; 
+    int highestFloor;
+  public:
+    Elevator(int = 1, int = 1, int = 15);  // constructor
+    void request(int);
+};
+// class implementation section
+Elevator::Elevator(int idnum, int cfloor, int maxfloor)
+{
+  elNum = idnum;
+  currentFloor = cfloor;
+  highestFloor = maxfloor;
+}
+void Elevator::request(int newfloor)
+{
+ if (newfloor < 1 || newfloor > highestFloor || newfloor == currentFloor)
+    ;  // do nothing
+  else if (newfloor > currentFloor) // move elevator up
+  {
+    cout << "\nElevator " << elNum
+         << " starting at floor " << currentFloor << endl;
+    while (newfloor > currentFloor)
+    {
+      currentFloor++; // add one to current floor
+      cout << " Going Up - now at floor " << currentFloor << endl;
+    }
+    cout << "Elevator " << elNum
+         << " stopping at floor " << currentFloor << endl;
+  }
+  else // move elevator down
+  {
+    cout << "\nElevator " << elNum
+         << " starting at floor " << currentFloor << endl;
+    while (newfloor < currentFloor)
+    {
+      currentFloor--;   // subtract one from current floor
+      cout << " Going Down - now at floor " << currentFloor << endl;
+    }
+    cout << "Elevator "<< elNum
+         << " Stopping at floor " << currentFloor << endl;
+  }
+  return;
+}
+int main()
+{
+  srand(time(NULL));
+  Elevator a;   // declare 1 object of type Elevator
+  int cont=0,val,valant=0;
+  while(cont!=5){
+    val=(rand()%15)+1;
+    while(val==valant){
+      val=(rand()%15)+1;
+    }
+      a.request(val);
+      valant=val;
+      cont+=1;
+  }
+  return 0;
+}
+*********************************************************************
+//ejercicio 2 pag 481
+#include <iostream>
+
+using namespace std;
+
+class Circle
+{
+private:
+ int xCenter;
+ int yCenter;
+ double radius;
+ int scaleFactor;
+public:
+ Circle(int=0,int=0,double=1.0,int=1);
+ void display();
+};
+
+//implementation
+
+Circle::Circle(int x, int y, double rad,int scale){
+ xCenter=x;
+ yCenter=y;
+ radius=rad;
+ scaleFactor=scale;
+}
+
+void Circle::display(){
+ cout<<"Central coordinate (x,y): ("<<xCenter<<","<<yCenter<<")\nRadius: "<<radius<<endl;
+ cout<<"Radius scaled: "<<scaleFactor*radius<<endl;
+}
+
+int main(){
+ Circle a(3,2,5.0,3),b(0,0,3.56,12),c;
+ a.display();
+ b.display();
+ c.display();
+}
+*********************************************************************
+//ejercicio 11 pag 507
+#include<iostream>
+using namespace std;
+
+class Fractions{
+public:
+  int num;
+ int den;
+ Fractions(int = 1,int =1);
+ Fractions operator+(Fractions&);
+ Fractions operator-(Fractions&);
+ Fractions operator*(Fractions&);
+ Fractions operator/(Fractions&);
+ void show();
+};
+
+//implementation
+
+Fractions::Fractions(int nume,int deno){
+ if(nume==0){ 
+  num=1;
+ }else{
+  num=nume;
+ }
+ if(deno==0){
+  den=1;
+ }else{
+  den=deno;
+ }
+}
+
+Fractions operator+(Fractions& add){
+ Fractions adder;
+ adder.num=(num*add.den)+(den*add.num);
+ adder.den=den*add.den;
+ return adder;
+}
+
+Fractions operator-(Fractions& sub){
+ Fractions substract;
+ substract.num=(num*sub.den)-(sub*add.num);
+ substract.den=d1en*sub.den;
+ return substract;
+}
+
+Fractions operator*(Fractions& mul){
+ Fractions multiplier;
+ multiplier.num=num*mul.num;
+ multiplier.den=den*mul.den;
+ return multiplier;
+}
+
+Fractions operator/(Fractions& div){
+ Fractions divider;
+ divider.num=num*div.den;
+ divider.den=den*div.num;
+ return divider;
+}
+
+void Fractions::show(){
+ cout<<"value: "<<num<<"/"<<den<<endl;
+}
+
+int main(){
+ Fractions a(3,2),b(6,8),add,subs,mult,div;
+ cout<<"fraction a "<<endl;
+ a.show();
+ cout<<"fraction b"<<endl;
+ b.show();
+ add=a+b;
+ subs=a-b;
+ mult=a*b;
+ div=a/b;
+ cout<<"addition "<<endl;
+ add.show();
+ cout<<"substraction"<<endl;
+ subs.show();
+ cout<<"multiplication"<<endl;
+ mult.show();
+ cout<<"division"<<endl;
+ div.show();
+
+}
+*********************************************************************
+//ejercicio 4 pag 518
+#include <iostream>
+#include <iomanip>
+using namespace std;
+// class declaration section
+class Date
+{
+  public:
+    int month;
+    int day;
+    int year;
+    Date(int = 7, int = 4, int = 2012);   // constructor
+    void showDate();      // method to display a date
+    void swap(Date&);    // method to swap two dates
+};
+// class implementation section
+Date::Date(int mm, int dd, int yyyy)
+{
+  month = mm;
+  day = dd;
+  year = yyyy;
+}
+void Date::showDate()
+{
+  cout << setfill('0')
+       << setw(2) << month << "/"
+       << setw(2) << day << "/"
+       << setw(2) << year % 100;
+  return;
+}
+void Date::swap(Date& temp) // method to swap two dates
+{
+  int tempstore;
+  // swap the day member
+  tempstore = temp.day;
+  temp.day = day;
+  day = tempstore;
+  // swap the month member
+  tempstore = temp.month;
+  temp.month = month;
+  month = tempstore;
+  // swap the year member
+  tempstore = temp.year;
+  temp.year = year;
+  year = tempstore;
+  return;
+}
+int main()
+{
+  Date oldDate(4,3,1999);
+  Date newDate(12,18,2012);
+ 
+  cout << "The date stored in oldDate is ";
+  oldDate.showDate();
+  cout << "\nThe date stored in newDate is ";
+  newDate.showDate();
+  newDate.swap(oldDate);  // swap dates by passing an address
+  cout << "\n\nAfter the swap:\n" <<endl;
+  cout << "The date stored in oldDate is ";
+  oldDate.showDate();
+  cout << "\nThe date stored in newDate is ";
+  newDate.showDate();
+  cout << endl;
+  return 0;
+}
+*********************************************************************
+//ejercicio 3 pag 258
+#include <iostream>
+#include <iomanip>
+using namespace std;
+// class declaration section
+class Date
+{
+  private:
+    int month, day, year;
+  public:
+    Date(int = 7, int = 4, int = 2012);  // constructor
+    // constructor for converting from long to Date
+    Date(long);
+    operator long();
+    void showDate();
+};
+// class implementation section
+Date::Date(int mm, int dd, int yyyy)  // constructor
+{
+  month = mm;
+  day = dd;
+  year = yyyy;
+}
+// constructor for converting from long to Date
+Date::Date(long findate)
+{
+  year = int(findate/10000.0);
+  month = int((findate - year * 10000.0)/100.0);
+  day = int(findate - year * 10000.0 - month * 100.0);
+}
+// member function to display a date
+void Date::showDate()
+{
+  cout << setfill('0')
+       << setw(2) << month << "/"
+       << setw(2) << day << "/"
+       << setw(2) << year % 100;
+  return;
+}
+
+//convert
+Date::operator long(){
+ int mp,yp;
+ if(month<=2){
+  mp=0;
+  yp=year-1;
+ }else{
+  mp=(0.4*month+2.3);
+  yp=year;
+ }
+ int t=(yp/4)-(yp/100)+(yp/400);
+ int Julian=365*year + 31*(month-1) + day+t-mp;
+ return Julian;
+
+}
+
+int main()
+{
+  Date g1(1,31,2011),g2(3,16,2012);
+  long j1,j2;
+  j1=long(g1);
+  cout<<"Gregorian date 1: ";
+  g1.showDate();
+  cout<<"\nThe julian date of the gregorian date: "<<j1<<endl;
+
+  j2=long(g2);
+  cout<<"Gregorian date 2: ";
+  g2.showDate();
+  cout<<"\nThe julian date of the gregorian date: "<<j2<<endl;
+  return 0;
+}
+*********************************************************************
+//ejercicio 4 pag 533
+#include <iostream>
+#include <cmath>
+using namespace std;
+// class declaration section
+class Complex
+{
+  // friends list
+  friend double addreal(Complex&, Complex&);
+  friend double addimag(Complex&, Complex&);
+  private:
+    double real;
+    double imag;
+  public:
+    Complex(double = 0, double = 0);  // constructor
+    void display();
+    Complex operator[]( double);
+};
+// class implementation section
+Complex::Complex(double rl, double im)
+{
+  real = rl;
+  imag = im;
+}
+void Complex::display()
+{
+  char sign = '+';
+  if(imag < 0) sign = '-';
+  cout << real << sign << abs(imag) << "i";
+  return;
+}
+// friend implementations
+double addreal(Complex &a, Complex &b)
+{
+  return(a.real + b.real);
+}
+double addimag(Complex &a, Complex &b)
+{
+  return(a.imag + b.imag);
+}
+
+//
+Complex Complex::operator[](double m){
+ Complex tmp;
+ tmp.real=tmp.real*m;
+ tmp.imag=tmp.imag*m;
+ return tmp;
+}
+int main()
+{
+  Complex a(3.2, 5.6), b(1.1, -8.4);
+  double re, im;
+  cout << "\nThe first complex number is ";
+  a.display();
+  cout << "\nThe second complex number is ";
+  b.display();
+  re = addreal(a,b);
+  im = addimag(a,b);
+  Complex c(re,im);  // create a new Complex object
+  cout << "\n\nThe sum of these two complex numbers is ";
+  c.display();
+
+  //
+  cout<<"\n\nvalue of c: ";
+  c.display();
+  c=a[3.1];
+  cout<<"\nThe new value of c: ";
+  c.display();
+  cout<<endl;
+  return 0;
+}
+*********************************************************************
+//ejercicio 9 pag 561
+#include<iostream>
+#include<time.h>
+using namespace std;
+
+class Customer{
+private:
+ int reqgas;
+ int time;
+ static int totalgas;
+public:
+ Customer();
+ ~Customer();//el libro tiene como destructor el signo -, cuando en realidad se usa el ~
+ void request();
+ static void total();
+};
+
+int Customer::totalgas=0; 
+
+Customer::Customer(){
+ cout<<"A customer has arrived!!!"<<endl;
+}
+
+Customer::~Customer(){
+ cout<<"the customer has left"<<endl;
+}
+
+void Customer::request(){ 
+ reqgas=(3+rand())%15;
+ time=(1+rand())%15;
+ cout<<"the customer request "<<reqgas<<" gallons of gas, in "<<time<<" minutes."<<endl;
+ totalgas+=reqgas;
+}
+
+void Customer::total(){
+ cout<<"total gas dispatched: "<<totalgas<<endl;
+}
+
+int main(){
+ srand(time(NULL));
+ Customer *cus;
+ for(int i=0;i<10;i++){
+  cus=new Customer;
+  cus->request();
+  delete cus; 
+ }
+ Customer::total();
+}
+*********************************************************************
+//ejercicio 10 pag 562
+#include<iostream>
+#include<time.h>
+using namespace std;
+
+class Customer{
+private:
+ int reqgas;
+ int time;
+ static int totalgasA;
+ static int totalgasB;
+ static int totalgasC;
+public:
+ Customer();
+ ~Customer();//el libro tiene como destructor el signo -, cuando en realidad se usa el ~
+ void request();
+ static void total();
+};
+
+int Customer::totalgasA=0;
+int Customer::totalgasB=0;
+int Customer::totalgasC=0; 
+
+Customer::Customer(){
+ cout<<"A customer has arrived!!!"<<endl;
+}
+
+Customer::~Customer(){
+ cout<<"the customer has left"<<endl;
+}
+
+void Customer::request(){ 
+ reqgas=(3+rand())%15;
+ time=(1+rand())%15;
+ int type=(1+rand())%4;
+ switch(type){
+  case 1:
+   cout<<"the customer request "<<reqgas<<" gallons of 87 octane gas, in "<<time<<" minutes."<<endl;
+   totalgasA+=reqgas;
+  break;
+  case 2:
+   cout<<"the customer request "<<reqgas<<" gallons of 93 octane gas, in "<<time<<" minutes."<<endl;
+   totalgasB+=reqgas;
+  break;
+  case 3:
+   cout<<"the customer request "<<reqgas<<" gallons of 97 octane gas, in "<<time<<" minutes."<<endl;
+   totalgasC+=reqgas;
+  break;
+ }
+}
+
+void Customer::total(){
+ cout<<"total 87 octane gas dispatched: "<<totalgasA<<endl;
+ cout<<"total 93 octane gas dispatched: "<<totalgasB<<endl;
+ cout<<"total 97 octane gas dispatched: "<<totalgasC<<endl;
+}
+
+int main(){
+ srand(time(NULL));
+ Customer *cus;
+ for(int i=0;i<10;i++){
+  cus=new Customer;
+  cus->request();
+  delete cus; 
+ }
+ Customer::total();
+}

@@ -1,0 +1,26 @@
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include "PoligonoIrreg.h"
+
+using namespace std;
+
+PoligonoIrreg::PoligonoIrreg()
+{
+	//vct.reserve(n);
+}
+
+
+void PoligonoIrreg::addVertice(Coordenada a)
+{
+	vct.push_back(a);	
+}
+
+void PoligonoIrreg::imprimeVertices()
+{
+	vector <Coordenada>::iterator i;
+
+	for (i = vct.begin(); i != vct.end(); i++)
+		cout << "\nvertice: (" << (*i).obtenerX() << ", " << (*i).obtenerY() << ")";
+}

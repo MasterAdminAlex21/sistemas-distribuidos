@@ -1,0 +1,88 @@
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <string>
+
+using namespace std;
+
+
+void WriteString(ofstream& file,const string& str)
+{
+  // get the length of the string data
+  unsigned len = str.size();
+
+  // write the size:
+  file.write( reinterpret_cast<const char*>( &len ), sizeof(len) );
+
+  // write the actual string data:
+  file.write( str.c_str(), len );
+}
+
+string ReadString(ifstream& file)
+{
+  // this probably isn't the optimal way to do it, but whatever
+  string str;
+
+  // get the length
+  unsigned len;
+  file.read( reinterpret_cast<char*>( &len ), sizeof(len) );
+
+  // we can't read to string directly, so instead, create a temporary buffer
+  if(len > 0)
+  {
+    char* buf = new char[len];
+    file.read( buf, len );
+    str.append( buf, len );
+    delete[] buf;
+  }
+  return str;
+}
+
+inline void WriteInteger(ofstream& file, int& num)
+{
+   file.write(reinterpret_cast<char *>(&num),sizeof(int));
+}
+
+int ReadInteger(ifstream& file)
+{
+   int num;
+   file.read(reinterpret_cast<char *>(&num),sizeof(int));
+   return num;
+}
+
+
+
+int main()
+{
+ofstream outfile;
+ifstream infile;
+
+
+int num1 = 1;
+string foo = "First line";
+string foo1 = "Another line";
+
+string Name = "Mike";
+string filename = Name + ".dat";  // changed to .dat to be clear it's binary
+outfile.open (filename.c_str(), ios::out|ios::binary);
+
+WriteString( outfile, foo );  // this writes it to the file
+WriteInteger(outfile, num1);
+WriteString( outfile, foo1 );
+outfile.close();
+
+infile.open(filename.c_str(), ios::in|ios::binary);
+
+string str0 = ReadString(infile);
+int num2 = ReadInteger (infile);
+string str1 = ReadString(infile);
+
+cout << str0 << endl;
+cout << num2 << endl;
+cout << str1 << endl;
+
+infile.close();
+
+system("break");
+return 0;
+}

@@ -1,0 +1,45 @@
+import java.aw.*;
+import java.awt.event.*;
+
+public class CertificadoG implements ActionListener{
+	
+
+	frame f;
+	Panerl p;
+	Label  l;
+	TextField tf;
+	button b;
+	TextArea ta;
+	FileInputStream fis;
+	CertificateFactory cf;
+	X509Certificate c;
+
+
+	public Certificado G(){
+
+    f= new frame ("certifiacados digitales");
+    p= new panel (new)
+    l=new Label ("certificado",2);
+    tf= new TextFile ();
+    b= new Button ("aceptar");
+    b= addActionListener(this);
+    ta; new TextArea();
+    fis= new FileInputStream(tf.getText());
+    cf= certifateFactory.getInstance("x.509");
+    x509Certificate c=(X509Certicate) cf.generateCerticicate(fis);
+    p.add(l);
+    p.add(tf);
+    p.add(b);
+    f.add("center",ta);
+    f.add("south",p);
+    f.setSize (800,600);
+    f.setLocationRelativeTo(null);
+    f.addWindowListener(new WindowAdapter()){
+      public void windowClosing (WindowEvent we){
+      System.exit(0);
+      }
+    }
+
+
+	}
+}

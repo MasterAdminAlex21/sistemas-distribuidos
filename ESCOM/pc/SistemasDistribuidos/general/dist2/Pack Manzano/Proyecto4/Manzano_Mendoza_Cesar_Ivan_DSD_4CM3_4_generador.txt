@@ -1,0 +1,609 @@
+//******************************************************************************************
+//	PaqueteDatagrama.h
+/*
+	Interfaz de la clase Paquete datagrama	
+*/
+#ifndef PAQUETEDATAGRAMA_H_
+#define PAQUETEDATAGRAMA_H_
+#include <stdint.h>
+struct msj {
+	uint32_t secuencia; //Numero de secuencia
+	uint32_t solicitud[2]; //pareja de números enviados por el cliente para su suma
+	uint32_t respuesta; //respuesta enviada por el servidor
+};
+typedef msj mensaje; 
+
+class PaqueteDatagrama {
+public:
+   //cadena (datos), longitud de la cadena, dirección IP_externa, puerto_externo
+   PaqueteDatagrama(char *, unsigned int , char *, int );
+   //mensaje vacío de una longitud determinada para la recepción y puerto de recepcion
+   PaqueteDatagrama(unsigned int);
+   ~PaqueteDatagrama();
+   char * obtieneDireccion();
+   unsigned int obtieneLongitud();
+   int obtienePuerto();
+   char *obtieneDatos();
+   void inicializaPuerto(int);
+   void inicializaIp(char *);
+   void inicializaDatos(char *);
+private:
+   char *datos;
+   char ip[16];   
+   unsigned int longitud;
+   int puerto;  
+};
+
+#endif
+
+//******************************************************************************************
+//	PaqueteDatagrama.cpp
+/*
+	Implementación de la clase Paquete datagrama que encapsula una dirección ip, un puerto, y datos;
+	ya sea para recibirlo o para enviarlo con la clase SocketDatagrama.
+*/
+
+#include <string.h>
+#include "PaqueteDatagrama.h"
+
+using namespace std;
+
+PaqueteDatagrama::PaqueteDatagrama(char *datosE, unsigned int longitudE, char *ipE, int puertoE)
+{
+   longitud = longitudE;
+   datos = new char[longitudE + 1];
+   memcpy(datos, datosE, longitudE);   
+   strcpy(ip, ipE);
+   puerto = puertoE;
+}
+
+PaqueteDatagrama::PaqueteDatagrama(unsigned int longitudE)
+{
+   longitud = longitudE;
+   datos = new char[longitudE + 1];
+   strcpy(datos, "");   
+   strcpy(ip, "");
+}
+
+PaqueteDatagrama::~PaqueteDatagrama()
+{
+   delete []datos;
+}
+
+char * PaqueteDatagrama::obtieneDireccion()
+{
+   return ip;
+}
+
+unsigned int PaqueteDatagrama::obtieneLongitud()
+{
+   return longitud;
+}
+
+int PaqueteDatagrama::obtienePuerto()
+{
+   return puerto;
+}
+
+char * PaqueteDatagrama::obtieneDatos()
+{
+   return datos;
+}
+
+void PaqueteDatagrama::inicializaPuerto(int pu)
+{
+   puerto = pu;
+   return;
+}
+
+void PaqueteDatagrama::inicializaIp(char *IP)
+{
+   strcpy(ip, IP);
+   return;
+}
+
+void PaqueteDatagrama::inicializaDatos(char *DATOS)
+{
+   memcpy(datos, DATOS, longitud);
+}
+
+//******************************************************************************************
+//	SocketDatagrama.h
+/*
+	Interfaz de la clase SocketDatagrama
+*/
+
+#ifndef SOCKETDATAGRAMA_H_
+#define SOCKETDATAGRAMA_H_
+
+#include "PaqueteDatagrama.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/time.h>
+#include <errno.h>
+
+class SocketDatagrama{
+public:
+   SocketDatagrama(int); //puerto local no se podrá cambiar para el proceso. Si es cero, lo asigna el sistema operativo
+   ~SocketDatagrama();
+   //Recibe un paquete tipo datagrama proveniente de este socket
+   int recibe(PaqueteDatagrama & p);
+   //Envía un paquete tipo datagrama desde este socket
+   int envia(PaqueteDatagrama & p);
+   void setTimeout(time_t segundos, suseconds_t microsegundos);
+   void unsetTimeout( );
+   int recibeTimeout(PaqueteDatagrama & p); 	
+private:   
+   struct sockaddr_in direccionLocal;
+   struct sockaddr_in direccionForanea;
+   struct timeval tiempoFuera;
+   int s; //ID socket
+   bool timeout;
+};
+
+#endif
+
+//******************************************************************************************
+//	SocketDatagrama.cpp
+/*
+	Implementación de la clase SocketDatagrama que se usa para crear un socket datagrama
+	y para enviar/recibir datagramas utilizando la clase PaqueteDatagrama.
+*/
+
+#include "SocketDatagrama.h"
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <strings.h>
+#include <iostream>
+#include <errno.h>
+#include <stdlib.h>
+
+using namespace std;
+
+SocketDatagrama::SocketDatagrama(int puertoL)
+{
+   s = socket(AF_INET, SOCK_DGRAM, 0);
+   if( s == -1 ){
+      //cout << "Error al asociar el socket"<<endl;
+      //exit(1);
+   }
+   bzero((char *)&direccionLocal, sizeof(struct sockaddr_in));
+   bzero((char *)&direccionForanea, sizeof(struct sockaddr_in));      
+
+   direccionLocal.sin_family = AF_INET;
+   direccionLocal.sin_addr.s_addr = INADDR_ANY;
+   direccionLocal.sin_port = htons(puertoL);
+   int b = bind(s, (struct sockaddr *)&direccionLocal,sizeof(direccionLocal));
+
+   if( b == -1 ){
+      //cout << "Error al asociar el socket"<<endl;
+      //exit(1); 
+   }
+}
+
+SocketDatagrama::~SocketDatagrama()
+{
+   close(s);
+}
+
+//Recibe un paquete tipo datagrama proveniente de este socket
+int SocketDatagrama::recibe(PaqueteDatagrama & p)
+{
+   int retorno;
+   socklen_t clilen; //Ojo no compila si es un tipo int en C
+   clilen = sizeof(direccionForanea);
+   retorno = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+   p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+   p.inicializaIp(inet_ntoa(direccionForanea.sin_addr));
+   
+   return retorno;
+}
+
+//Envía un paquete tipo datagrama desde este socket
+int SocketDatagrama::envia(PaqueteDatagrama & p)
+{
+   direccionForanea.sin_family = AF_INET;
+   direccionForanea.sin_addr.s_addr = inet_addr(p.obtieneDireccion());
+   direccionForanea.sin_port = htons(p.obtienePuerto());
+   sendto(s, (char *)p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *) &direccionForanea, sizeof(direccionForanea));
+  
+
+}
+void SocketDatagrama::setTimeout(time_t segundos, suseconds_t microsegundos){
+	timeout = true;	
+	tiempoFuera.tv_sec = segundos;
+	tiempoFuera.tv_usec = microsegundos;
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tiempoFuera, sizeof(tiempoFuera));	
+}
+void SocketDatagrama::unsetTimeout(){
+	 setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, NULL, 0);
+	timeout = false;
+}
+
+int SocketDatagrama::recibeTimeout(PaqueteDatagrama & p)
+{
+   int retorno;
+   struct timeval tiempo1;
+   struct timeval tiempo2;
+   struct timeval res;
+		
+   socklen_t clilen; //Ojo no compila si es un tipo int en C
+   clilen = sizeof(direccionForanea);
+   gettimeofday(&tiempo1, NULL);
+   retorno = recvfrom(s, (char *) p.obtieneDatos(), p.obtieneLongitud(), 0, (struct sockaddr *)&direccionForanea, &clilen);
+   if(retorno < 0){
+	if (errno == EWOULDBLOCK)
+	{
+		fprintf(stderr, "Tiempo para recepción transcurrido\n");	
+	}	
+	else
+	fprintf(stderr, "Error en recvfrom\n");
+    }
+    else{
+		gettimeofday(&tiempo2, NULL);
+		timersub(&tiempo2,&tiempo1,&res);
+		cout << res.tv_sec << " " << res.tv_usec << endl;		
+	}	
+   p.inicializaPuerto(ntohs(direccionForanea.sin_port));
+   p.inicializaIp(inet_ntoa(direccionForanea.sin_addr));
+   
+   return retorno;
+}
+
+//******************************************************************************************
+//	Generador.h
+/*
+	Interfaz de la clase Generador
+*/
+
+
+#ifndef GENERADOR_H_
+#define GENERADOR_H_
+#include "SocketDatagrama.h"
+#include "PaqueteDatagrama.h"
+#include <cstring>
+#include <string>
+#include <stdlib.h>
+#include <cmath>
+#include <sstream>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <iostream>
+#include <ctime>
+using namespace std;
+
+struct sms {
+	int id;
+	int origen;
+	string telOrig;
+	string telDest;
+	string cdOrig;
+	string cdDest;
+	string fecha;
+	string hora;
+	char mensaje[165];
+};
+
+class Generador
+{
+public:
+	Generador( int n, int edo );
+	~Generador();
+private:
+	void llenaEstados( string* estados );
+	string creaTel( int n );
+};
+#endif
+
+//******************************************************************************************
+//	Generador.cpp
+/*
+	Clase encargada de crear un socket con el localhost y realizar la simulación del envío de mensajes
+	al servidor. Esta clase incluye la declaración de la estructura sms. Intenta realizar el envío del
+	paquete hasta que se recibe la confirmación de recibido.
+*/
+
+#include "Generador.h"
+#define par pair< long long, int >
+using namespace std;
+
+Generador::Generador(int n, int edo){
+	string estados[32];
+	srand(getpid());
+	llenaEstados( estados );
+	int tam = -1;
+	int puerto = 0;
+	int pto = 7200;
+	char ipPadre[] = "127.0.0.1";
+	sms mensaje;
+	PaqueteDatagrama *paquete = new PaqueteDatagrama( sizeof( sms ) );
+	SocketDatagrama *socket = new SocketDatagrama( puerto );
+	socket->setTimeout( 0, 250000 );
+	par tmp;
+
+	for( int i = 0; i < n; i++ ){
+		time_t t = time(0);   // get time now
+    	struct tm * now = localtime( & t );
+
+    	stringstream aout;
+		aout << now->tm_mday << "/" << (now->tm_mon+1) << "/" << (now->tm_year+1900);
+    	string date = aout.str();
+
+    	aout.str("");
+    	aout << now->tm_hour << ":" << now->tm_min;
+    	string hora = aout.str();
+
+		mensaje.id = i;
+		mensaje.origen = edo;
+		mensaje.telOrig = creaTel( n );
+		mensaje.telDest = creaTel( n );
+		mensaje.cdOrig = estados[ rand()%32 ];
+		mensaje.cdDest = estados[ rand()%32 ];
+		mensaje.fecha = date;
+		mensaje.hora = hora;
+
+		string cad;
+		for( int j = 0; j < 80; j++ ){
+			cad += (char) (65 + rand()%58);
+		}
+		strcpy( mensaje.mensaje, cad.c_str() );
+
+		while(1){
+			paquete =  new PaqueteDatagrama( (char *) &mensaje , sizeof(sms), ipPadre , pto );
+			int env = socket->envia( *paquete );
+			
+			paquete = new PaqueteDatagrama( sizeof(par) );
+			int tam = socket->recibe( *paquete );
+			memcpy( &tmp, paquete->obtieneDatos(), tam );
+			
+			if( tmp.first == i && tmp.second == edo ){
+				//cout << "Confirmado: "<< edo << endl;
+				break;
+			}
+			else{
+				cout << "Falló enviando, estado " << edo << ", paquete "<< i << endl;
+			}
+		}
+		cout << "Origen: " << mensaje.telOrig << " Destino: " << mensaje.telDest << endl;
+	}
+	delete socket;
+}
+
+Generador::~Generador(){
+}
+
+string Generador::creaTel( int n ){
+	stringstream out;
+
+	int a =  rand()%32 + 1;
+	out << a;
+	string estado = out.str();
+
+	out.flush();
+	a = rand()%(int)sqrt(n) + 1;
+	stringstream aout;
+	aout << a;
+	string num = aout.str();
+
+	if( estado.size() == 1 ) estado = "0"+estado;
+	for( int i = 0; num.size() < 8; i++ ){
+		num = "0" + num;
+	}
+
+	return estado+num;
+}
+
+void Generador::llenaEstados( string* estados ){
+	estados[0] = "Aguascalientes";
+	estados[1] = "Baja California";
+	estados[2] = "Baja California Sur";
+	estados[3] = "Campeche";
+	estados[4] = "Chiapas";
+	estados[5] = "Chihuahua";
+	estados[6] = "Coahuila";
+	estados[7] = "Colima";
+	estados[8] = "Distrito Federal";
+	estados[9] = "Durango";
+	estados[10] = "Estado de México";
+	estados[11] = "Guanajuato";
+	estados[12] = "Guerrero";
+	estados[13] = "Hidalgo";
+	estados[14] = "Jalisco";
+	estados[15] = "Michoacán";
+	estados[16] = "Morelos";
+	estados[17] = "Nayarit";
+	estados[18] = "Nuevo León";
+	estados[19] = "Oaxaca";
+	estados[20] = "Puebla";
+	estados[21] = "Querétaro";
+	estados[22] = "Quintana Roo";
+	estados[23] = "San Luis Potosí";
+	estados[24] = "Sinaloa";
+	estados[25] = "Sonora";
+	estados[26] = "Tabasco";
+	estados[27] = "Tamaulipas";
+	estados[28] = "Tlaxcala";
+	estados[29] = "Veracruz";
+	estados[30] = "Yucatán";
+	estados[31] = "Zacatecas";
+}
+
+//******************************************************************************************
+//	Archivo.h
+/*
+	Interfaz de la clase Archivo	
+*/
+
+#ifndef ARCHIVO_H_
+#define ARCHIVO_H_
+#include <cstring>
+#include <string>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <iostream>
+#include <new>
+using namespace std;
+
+class Archivo
+{
+public:
+	Archivo(const char *filename, int banderas);
+	Archivo(const char *filename, int banderas, mode_t modo);
+	~Archivo();
+	size_t lee(size_t nbytes);
+	size_t escribe(const void *buffer, size_t nbytes);
+	char *get_contenido();
+	void cerrar();
+protected:
+	string nombreArchivo; //Almacena el nombre del archivo
+	int fd; //Almacena el descriptor de archivo
+	char *contenido; //Almacena temporalmente contenido parcial o total del archivo
+};
+#endif
+
+//******************************************************************************************
+//	Archivo.cpp
+/*
+	Implementación de la clase archivo que permite abrir o crear un archivo con las banderas
+	y permisos que se indiquen, al igual que leer los datos que contienen o escribir en ellos.
+*/
+
+#include "Archivo.h"
+using namespace std;
+
+Archivo::Archivo(const char *filename, int banderas){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas)) == -1){
+		perror(filename);
+		exit(-1);
+   	}
+}
+Archivo::Archivo(const char *filename, int banderas, mode_t modo){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas, modo)) == -1){
+		perror(filename);
+		exit(-1);
+	}
+}
+
+Archivo::~Archivo(){
+}
+
+size_t Archivo::lee(size_t nbytes){
+	contenido = (char*)realloc(contenido, nbytes);
+	return read(fd, contenido, nbytes);
+}
+
+size_t Archivo::escribe(const void *buffer, size_t nbytes){
+	return write(fd, buffer, nbytes);
+}
+char *Archivo::get_contenido(){
+	return contenido;
+}
+void Archivo::cerrar(){
+	close(fd);
+}
+
+//******************************************************************************************
+//	servidor.cpp
+/*
+	Main del servidor-generador. Genera 32 archivos y 32 procesos de los que va a recibir los
+	mensajes. Éste se pone a escuchar de manera indefinida y cada que recibe un mensaje verifica
+	si no lo ha recibido antes en un conjunto en que tiene guardado el id del mensaje y el estado
+	de procedencia; si ya lo ha recibido antes, sólo reenvía el mensaje de confirmación, pero si
+	no lo ha recibido además lo escribe en el archivo y lo guarda como recibido.
+*/
+
+/*
+	Parámetros:
+	1. Número de mensajes a enviar de cada estado.
+*/
+
+#include "SocketDatagrama.h"
+#include "PaqueteDatagrama.h"
+#include "Generador.h"
+#include "Archivo.h"
+#include <iostream>
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <vector>
+#include <unistd.h>
+#include <set>
+#define mp make_pair
+#define pb push_back
+#define par pair< long long, int >
+using namespace std;
+
+int main(int argc, char *argv[]){
+	int N = atoi( argv[1] );
+	int port = 7200;
+	int res = 1;
+	sms msj;
+	PaqueteDatagrama *paquete = new PaqueteDatagrama( sizeof( sms ) );
+	SocketDatagrama *socket = new SocketDatagrama( port );
+	set < par > conj;
+	par tmp;
+
+	vector < Archivo > arc;
+	char nombre[100];
+
+	for( int i = 0; i < 32; i++ ){
+		sprintf ( nombre, "%d.dat", i+1 );
+		Archivo temp( nombre, O_WRONLY|O_TRUNC|O_CREAT, 0666 );
+		arc.pb( temp );
+	}
+
+	for( int i = 0; i < 32; i++ ){
+		if(fork() == 0){
+			Generador gen( atoi( argv[1] ), i );
+			exit(0);
+		}
+	}
+
+	while( 1 ){
+		paquete = new PaqueteDatagrama( sizeof(sms) );
+		int tam = socket->recibe( *paquete );
+		memcpy( &msj, paquete->obtieneDatos(), tam );
+		tmp = mp( msj.id, msj.origen );
+
+		if( !conj.count( tmp ) ){
+			arc[ msj.origen ].escribe((char *) &msj, sizeof(sms) );
+			conj.insert( tmp );
+			//cout << conj.size()<<endl;
+			//if( conj.size() == (N*32) ) cout << "Recibió todos"<<endl;
+		}
+
+		paquete =  new PaqueteDatagrama( (char *) &tmp , sizeof(par), paquete->obtieneDireccion(), paquete->obtienePuerto() );
+		int env = socket->envia( *paquete );
+	}
+	return 0;
+}
+
+//******************************************************************************************
+//	Makefile
+/*
+	Archivo para compilar el servidor-generador
+*/
+all: servidor
+servidor: servidor.cpp SocketDatagrama.o PaqueteDatagrama.o Archivo.o Generador.o
+	g++ servidor.cpp SocketDatagrama.o PaqueteDatagrama.o Archivo.o Generador.o -o servidor
+Generador.o: Generador.cpp Generador.h SocketDatagrama.o PaqueteDatagrama.o
+	g++ Generador.cpp -c	
+Archivo.o: Archivo.h Archivo.cpp
+	g++ Archivo.cpp -c
+SocketDatagrama.o: SocketDatagrama.cpp SocketDatagrama.h PaqueteDatagrama.o
+	g++ SocketDatagrama.cpp -c
+PaqueteDatagrama.o: PaqueteDatagrama.cpp PaqueteDatagrama.h
+	g++ PaqueteDatagrama.cpp -c
+
+

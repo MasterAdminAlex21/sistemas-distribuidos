@@ -1,0 +1,147 @@
+//******************************************************************************************
+//	Archivo.h
+/*
+	Interfaz de la clase Archivo	
+*/
+
+#ifndef ARCHIVO_H_
+#define ARCHIVO_H_
+#include <cstring>
+#include <string>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <iostream>
+#include <new>
+using namespace std;
+
+class Archivo
+{
+public:
+	Archivo(const char *filename, int banderas);
+	Archivo(const char *filename, int banderas, mode_t modo);
+	~Archivo();
+	size_t lee(size_t nbytes);
+	size_t escribe(const void *buffer, size_t nbytes);
+	char *get_contenido();
+	void cerrar();
+protected:
+	string nombreArchivo; //Almacena el nombre del archivo
+	int fd; //Almacena el descriptor de archivo
+	char *contenido; //Almacena temporalmente contenido parcial o total del archivo
+};
+#endif
+
+//******************************************************************************************
+//	Archivo.cpp
+/*
+	Implementación de la clase archivo que permite abrir o crear un archivo con las banderas
+	y permisos que se indiquen, al igual que leer los datos que contienen o escribir en ellos.
+*/
+
+#include "Archivo.h"
+using namespace std;
+
+Archivo::Archivo(const char *filename, int banderas){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas)) == -1){
+		perror(filename);
+		exit(-1);
+   	}
+}
+Archivo::Archivo(const char *filename, int banderas, mode_t modo){
+	nombreArchivo = filename;
+	if((fd = open(filename, banderas, modo)) == -1){
+		perror(filename);
+		exit(-1);
+	}
+}
+
+Archivo::~Archivo(){
+}
+
+size_t Archivo::lee(size_t nbytes){
+	contenido = (char*)realloc(contenido, nbytes);
+	return read(fd, contenido, nbytes);
+}
+
+size_t Archivo::escribe(const void *buffer, size_t nbytes){
+	return write(fd, buffer, nbytes);
+}
+char *Archivo::get_contenido(){
+	return contenido;
+}
+void Archivo::cerrar(){
+	close(fd);
+}
+
+//******************************************************************************************
+//	reportes.cpp
+/*
+	Main del generador de reportes. Recibe como parámetro el número telefónico del que se creará
+	el reporte. Define la estructura sms para poder leer los archivos generados. Abre cada uno de
+	los archivos y busca registro por registro la coincidencia con el número buscado y si coincide
+	imprime su información.
+*/
+
+/*
+	Parámetros:
+	1. Número telefónico del que se generará el reporte.
+*/
+
+#include <iostream>
+#include <string.h>
+#include <iomanip>
+#include <string>
+#include "Archivo.h"
+using namespace std;
+
+struct sms {
+	int id;
+	int origen;
+	string telOrig;
+	string telDest;
+	string cdOrig;
+	string cdDest;
+	string fecha;
+	string hora;
+	char mensaje[165];
+};
+
+int main( int argc, char *argv[] ){
+
+	int lee;
+	string tel = argv[1];
+	char nombre[100];
+	sms msj;
+
+	cout << endl;
+	cout << "Para el número telefónico " << tel << " se tienen los siguientes registros:" << endl;
+	cout << "Fecha\t\tHora\tCd. Origen\t\tTel. Marcado\tCd. Destino"<<endl;
+	for( int i = 0; i < 32; i++ ){
+		sprintf ( nombre, "%d.dat", i+1 );
+		Archivo temp( nombre, O_RDONLY );
+		while( (lee = temp.lee( sizeof( sms ) )) ){
+			memcpy( &msj, temp.get_contenido(), lee );
+			if( tel == msj.telOrig ){
+				cout << msj.fecha << "\t" << msj.hora << "\t" << setw(21) << left << msj.cdOrig << "\t" << msj.telDest << "\t" << msj.cdDest <<endl;
+			}
+		}
+	}
+	cout << endl;
+
+	return 0;
+}
+
+//******************************************************************************************
+//	Makefile
+/*
+	Archivo para compilar el generador de reportes
+*/
+all: reportes
+reportes: reportes.cpp Archivo.o
+	g++ reportes.cpp Archivo.o -o reportes
+Archivo.o: Archivo.h Archivo.cpp
+	g++ Archivo.cpp -c
+

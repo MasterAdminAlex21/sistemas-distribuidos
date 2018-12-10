@@ -1,0 +1,6 @@
+NOTA
+Si los archivos no son iguales modificar el archivo SocketDatagrama.cpp. La parte de ualarm en la línea 149, cambiar el valor de 50000 por uno más grande.
+
+Entre más chico el valor y se mantenga la igualdad entre los archivos mejor.
+
+Para "competir" con los tiempos de transferencia, comentar los prints o dar salida a archivo.
