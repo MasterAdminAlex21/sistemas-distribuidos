@@ -1,0 +1,37 @@
+Sección 4.0 -4.2
+A que se refiere el término serialización en java?
+
+A. A la actividad de aplanar un objeto o un conjunto relacionado de objetos para obtener una forma lineal adecuada para ser almacenada en disco  o para ser transmitida en un mensaje,
+B. A la actividad de invocar objetos remotos como argumentos que son transmitidas como mensaje
+C. A la actividad de convertir un objeto remoto en bytes para poder ser transmitidos como mensaje
+D. A la actividad de convertir un objeto en bytes, ser transmitidos a través  de una red para poder ser recocntruidos.
+
+Características que definen una referencia a un objeto remoto.
+
+A. Únicas entre todos los procesos, no reutilizadas, viven en el proceso  que lo crea, sobreviven mientras que el proceso continua en ejecución
+B. Únicas entre todos los procesos, reutilizadas sólo cuando son el objeto remoto haya sido borrado, viven en el proceso que lo crea, sobreviven hasta que el objeto haya sido borrado.
+C. Unicidad entre en su creación entre el espacio y tiempo, no reutilizadas,  viven mientras el proceso esta en ejecución
+D. Únicas entre todos los procesos, no reutlizadas, sobreviven sin importar si el objeto ha sido borrado
+
+
+El protocolo petición-respuesta esta basado en un trío de primitivas de comunicación que son:
+
+A.hazOperacion, damePeticion, enviaRespuesta
+B.hazSolicitud, dameACK,enviaRespuesta
+C.hazOperacion,dameMensaje,enviaRespuesta
+D. HazSolicitud,damePetición,enviaRespuesta
+
+Se utiliza en los clientes para invocar las operaciones remotas. Sus argumentos especifican el objeto remoto y el método a invocar, junto con información adicional. Su resultado es una respuesta RMI.
+
+A. primitiva hazOperacion
+B. primitiva damePeticion
+C. primitiva enviaRespuesta
+D. ninguna de las anteriores
+
+
+¿Qué es la representación externa de datos ?
+
+A. Estándar acordado para la representación de estructuras de datos y valores primitivos.
+B. Estándar acordado para la representación de tipos de datos primitivos y procedimientos remotos
+C. Estándar acordado para la representación de estructura de datos, valores primitivos y procedimientos remotos
+D. Ninguna de las anteriores

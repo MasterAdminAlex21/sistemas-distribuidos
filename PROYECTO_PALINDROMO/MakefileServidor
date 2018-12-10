@@ -1,0 +1,9 @@
+run: compile	
+compile: PaqueteDatagrama.o SocketDatagrama.o Respuesta.o
+	g++ Servidor.cpp PaqueteDatagrama.o SocketDatagrama.o Respuesta.o -o servidor
+Respuesta.o: mensaje.h
+	g++ -c Respuesta.cpp
+PaqueteDatagrama.o:
+	g++ -c PaqueteDatagrama.cpp
+SocketDatagrama.o:
+	g++ -c SocketDatagrama.cpp
